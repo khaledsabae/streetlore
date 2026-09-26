@@ -83,25 +83,30 @@ jobs:
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "Resolved target tag: ${TAG}"
 
-      - name: Materialise Release Keystore
-        env:
-          KEYSTORE_B64: ${{ secrets.STREETLORE_KEYSTORE_BASE64 }}
-        if: env.KEYSTORE_B64 != ''
+      - name: Decode Keystore
         run: |
           set -e
           mkdir -p android/app
-          echo "$KEYSTORE_B64" | base64 -d > android/app/release_v2.keystore
+          # No `if:` guard. The previous conditional
+          # `if: env.KEYSTORE_B64 != ''` was getting evaluated as
+          # false even when the secret existed (a known GitHub
+          # Actions env-step quirk), so the file never got written.
+          # We now inline the secret expression and let the step
+          # always run. If the secret is missing the resulting
+          # file is empty and the Verify step below will error out
+          # with a helpful message.
+          echo "${{ secrets.STREETLORE_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release_v2.keystore
           chmod 600 android/app/release_v2.keystore
-          echo "Wrote $(wc -c < android/app/release_v2.keystore) bytes to android/app/release_v2.keystore"
-
-      - name: Verify keystore signature
-        if: env.SECRETS_OK == 'yes' || hashFiles('android/app/release_v2.keystore') != ''
-        run: |
-          set -e
-          if [ ! -f android/app/release_v2.keystore ]; then
-            echo "::error::release_v2.keystore is missing. Add the GitHub secret STREETLORE_KEYSTORE_BASE64 (base64 of the keystore file) and re-run."
+          SIZE=$(wc -c < android/app/release_v2.keystore)
+          echo "Wrote $SIZE bytes to android/app/release_v2.keystore"
+          if [ "$SIZE" -lt 1000 ]; then
+            echo "::error::release_v2.keystore is too small ($SIZE bytes). The STREETLORE_KEYSTORE_BASE64 secret is probably unset or truncated. Add it (base64 of $ANDROID_KEYSTORE_PATH) and re-run."
             exit 1
           fi
+
+      - name: Verify keystore signature
+        run: |
+          set -e
           SHA=$(keytool -list -v -keystore android/app/release_v2.keystore -storepass streetlore2026 2>&1 | grep -E '^\s*SHA1:' | head -n 1 | awk '{print $2}')
           echo "Keystore cert SHA-1: ${SHA}"
           if [ "${SHA}" != "AF:62:89:44:B5:F3:A0:0A:4E:CE:1E:72:34:13:26:EA:5A:E7:B4:8F" ]; then
