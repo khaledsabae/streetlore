@@ -473,11 +473,25 @@ STRICT RULES:
       temperature: 0.7,
       maxOutputTokens: 800,
     );
-    if (result == null || !result.isOk) {
+    if (result == null) {
       throw GeminiApiException(
-        statusCode: result?.statusCode ?? 0,
-        message: result?.errorBody ?? 'unknown error',
-        raw: result?.raw,
+        statusCode: 0,
+        message: 'AI not configured',
+      );
+    }
+    // v1.0.38: when ALL keys × ALL models failed the Gemini client
+    // returns a friendly fallback text in `result.text` and the
+    // sentinel statusCode 599. We surface that directly into the
+    // chat bubble instead of throwing the raw API crash log.
+    if (result.statusCode == 599) {
+      return result.text ??
+          "Sorry, I am currently unavailable. Please try again in a moment.";
+    }
+    if (!result.isOk) {
+      throw GeminiApiException(
+        statusCode: result.statusCode,
+        message: result.errorBody ?? 'unknown error',
+        raw: result.raw,
       );
     }
     final text = (result.text ?? '').trim();
@@ -509,11 +523,27 @@ class _LiveSession {
       temperature: 0.7,
       maxOutputTokens: 1024,
     );
-    if (result == null || !result.isOk) {
+    if (result == null) {
       throw GeminiApiException(
-        statusCode: result?.statusCode ?? 0,
-        message: result?.errorBody ?? 'unknown error',
-        raw: result?.raw,
+        statusCode: 0,
+        message: 'AI not configured',
+      );
+    }
+    // v1.0.38: same friendly-fallback detection as the static
+    // `askOnce` path above. Sentinel statusCode 599 means every
+    // (key, model) attempt failed and GeminiRestClient has already
+    // packaged a human-readable message in `result.text`.
+    if (result.statusCode == 599) {
+      return _LiveReply(
+        text: result.text ??
+            "Sorry, I am currently unavailable. Please try again in a moment.",
+      );
+    }
+    if (!result.isOk) {
+      throw GeminiApiException(
+        statusCode: result.statusCode,
+        message: result.errorBody ?? 'unknown error',
+        raw: result.raw,
       );
     }
     return _LiveReply(text: result.text ?? '');

@@ -35,9 +35,20 @@ class GeminiRestClient {
   /// to the next name (same key, different model). The SDK still
   /// uses the official `x-goog-api-key` header auth + 5-key rotation
   /// on 401/403/429/5xx/timeouts; this list just adds a per-key
-  /// model failover on top of that. Order chosen to prefer the
-  /// most-recent stable build first, falling back to the original
-  /// `gemini-1.5-flash`, then finally `gemini-1.0-pro`.
+  /// model failover on top of that.
+  ///
+  /// v1.0.38: dropped `gemini-1.0-pro` from the chain. The user
+  /// confirmed the live v1.0.37 build surfaced
+  ///   `models/gemini-1.0-pro is not found for API version v1beta,
+  ///    or is not supported for generateContent`
+  /// into the chat bubble - the 1.0 line is not available on the
+  /// v1beta endpoint. We now stick to the 1.5 family only:
+  /// 1.5-flash-002 -> 1.5-flash-001 -> 1.5-flash. If all three
+  /// still 404 / time out, the outer try-catch below returns a
+  /// conversational "Sorry, I am currently unavailable." via the
+  /// GeminiResult.text field with statusCode = 599 so the AI
+  /// Tour Guide renders it directly in the chat bubble instead
+  /// of the raw API crash log.
   ///
   /// The `model` argument from callers is prepended (deduped) so
   /// future callers can opt into a new model without changing this
@@ -46,8 +57,20 @@ class GeminiRestClient {
     'gemini-1.5-flash-002',
     'gemini-1.5-flash-001',
     'gemini-1.5-flash',
-    'gemini-1.0-pro',
   ];
+
+  /// v1.0.38 sentinel status code surfaced to callers when ALL keys
+  /// AND ALL models failed. The [GeminiResult.text] in this case
+  /// contains a friendly fallback message that callers should
+  /// display verbatim to the user (no further exception handling).
+  static const int _friendlyFallbackStatus = 599;
+
+  /// Friendlier fallback text shown in the AI Tour Guide chat
+  /// bubble when all 5 keys × 3 models have failed. Streamed
+  /// directly into `result.text` so the chat renders it as a
+  /// reply, not an error.
+  static const String _friendlyFallbackText =
+      "Sorry, I am currently unavailable. Please try again in a moment.";
 
   /// Send a `generateContent` request.
   ///
@@ -55,6 +78,12 @@ class GeminiRestClient {
   /// populated [GeminiResult] with the last error. Never throws —
   /// failures are logged and returned so callers can decide on their
   /// own fallback.
+  ///
+  /// If ALL 5 keys × 3 models fail, the wrapper returns a
+  /// `GeminiResult` with `statusCode == 599` and `text ==`
+  /// [_friendlyFallbackText]. Callers that want to surface that
+  /// directly into the chat (no exception, no raw API log) check
+  /// `result.statusCode == 599` and use `result.text` verbatim.
   ///
   /// If [apiKeys] (or [apiKey]) is null/empty, falls back to the
   /// keys defined in [AppConfig.geminiApiKeys].
@@ -106,8 +135,9 @@ class GeminiRestClient {
     final body = '$systemInstruction\n\n$userPrompt';
 
     GeminiResult? lastResult;
-    keyLoop:
-    for (var ki = 0; ki < keys.length; ki++) {
+    try {
+      keyLoop:
+      for (var ki = 0; ki < keys.length; ki++) {
       final key = keys[ki];
       final keyRedacted = key.length > 8
           ? '${key.substring(0, 4)}...${key.substring(key.length - 4)}'
@@ -278,7 +308,36 @@ class GeminiRestClient {
         }
       }
     }
-    return lastResult;
+    } catch (e, st) {
+      // Outer catch: catches any SDK exception or unexpected error
+      // that slipped past the per-attempt handlers above. The inner
+      // loops already turned every per-attempt error into a
+      // `lastResult` (or surfaced it) so reaching this catch usually
+      // means the request pipeline blew up (e.g. socket closed mid
+      // loop). Fall through to the friendly fallback below.
+      debugPrintGemini('SDK call: outer catch: $e\n$st');
+      lastResult ??= GeminiResult(
+        text: null,
+        statusCode: 0,
+        errorBody: e.toString(),
+        raw: null,
+      );
+    }
+    // ============================================================
+    // v1.0.38: when every (key, model) attempt has failed, return
+    // a friendly fallback text + the sentinel statusCode 599 so
+    // the AI Tour Guide can render the friendly message directly
+    // in the chat bubble instead of dumping the raw API crash log
+    // into it. Callers that want the raw last error can still read
+    // `lastResult?.errorBody`.
+    // ============================================================
+    return GeminiResult(
+      text: _friendlyFallbackText,
+      statusCode: _friendlyFallbackStatus,
+      errorBody: lastResult?.errorBody ??
+          'all ${keys.length} keys x ${models.length} models failed',
+      raw: null,
+    );
   }
 
   /// Pull the HTTP status code out of an SDK exception message.

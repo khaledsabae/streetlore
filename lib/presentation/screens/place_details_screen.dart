@@ -660,26 +660,133 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                           return;
                                         }
                                       } else {
-                                        if (!context.mounted) return;
-                                        ScaffoldMessenger.of(
+                                        // ========================================
+                                        // v1.0.38 UN-CHECK.
+                                        //
+                                        // The button is green
+                                        // (`_isVisited == true`). The
+                                        // user expects tapping it to
+                                        // (a) flip the badge back to a
+                                        // flag, (b) decrement the
+                                        // Profile "Explored" counter,
+                                        // and (c) actually DELETE the
+                                        // row from Supabase so the
+                                        // next time the screen opens
+                                        // it stays "Check-in".
+                                        // ========================================
+                                        final placeProvider = context
+                                            .read<PlaceProvider>();
+                                        final messenger = ScaffoldMessenger.of(
                                           context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Row(
-                                              children: [
-                                                const Icon(
-                                                  Icons.cancel_rounded,
-                                                  color: Colors.white,
-                                                  size: 18,
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Text(
-                                                  context.tr('checkin_removed'),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
                                         );
+                                        final userId = Supabase.instance
+                                            .client.auth
+                                            .currentUser
+                                            ?.id;
+                                        if (userId == null ||
+                                            userId.isEmpty) {
+                                          if (!context.mounted) return;
+                                          messenger.showSnackBar(
+                                            SnackBar(
+                                              content: const Text(
+                                                'Please sign in to '
+                                                'remove check-in.',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                            ),
+                                          );
+                                          return;
+                                        }
+                                        // Flip UI immediately so the
+                                        // tap feels responsive.
+                                        setState(
+                                          () => _isVisited = false,
+                                        );
+                                        try {
+                                          await Supabase.instance.client
+                                              .from('place_checkins')
+                                              .delete()
+                                              .eq('user_id', userId)
+                                              .eq('place_id', place.id);
+                                          // Decrement the local
+                                          // counter so the Profile
+                                          // "Explored" digit moves
+                                          // back on next open.
+                                          placeProvider
+                                              .unbumpLocalCheckinCount();
+                                          // Re-fetch in the
+                                          // background so the
+                                          // server-side counter
+                                          // eventually matches.
+                                          // ignore: unawaited_futures
+                                          placeProvider
+                                              .fetchRemoteCounts(userId);
+                                          if (!context.mounted) return;
+                                          messenger.showSnackBar(
+                                            SnackBar(
+                                              content: Row(
+                                                children: [
+                                                  const Icon(
+                                                    Icons
+                                                        .cancel_rounded,
+                                                    color: Colors.white,
+                                                    size: 18,
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Text(
+                                                    context.tr(
+                                                      'checkin_removed',
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              backgroundColor:
+                                                  AppColors.success,
+                                              duration: const Duration(
+                                                seconds: 2,
+                                              ),
+                                            ),
+                                          );
+                                        } on PostgrestException catch (e) {
+                                          // Roll the UI back so it
+                                          // stays in sync with the
+                                          // DB.
+                                          if (!context.mounted) return;
+                                          setState(
+                                            () => _isVisited = true,
+                                          );
+                                          messenger.showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Could not remove '
+                                                'check-in: '
+                                                '[${e.code ?? ""}] '
+                                                '${e.message}',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                              duration: const Duration(
+                                                seconds: 6,
+                                              ),
+                                            ),
+                                          );
+                                        } catch (e) {
+                                          if (!context.mounted) return;
+                                          setState(
+                                            () => _isVisited = true,
+                                          );
+                                          messenger.showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Could not remove '
+                                                'check-in: $e',
+                                              ),
+                                              backgroundColor: Colors.red,
+                                              duration: const Duration(
+                                                seconds: 6,
+                                              ),
+                                            ),
+                                          );
+                                        }
                                       }
                                     },
                                   ),

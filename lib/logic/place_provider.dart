@@ -65,6 +65,20 @@ class PlaceProvider extends ChangeNotifier {
     );
   }
 
+  /// v1.0.38: optimistic local decrement of the remote check-in
+  /// counter (mirror of [bumpLocalCheckinCount] for the un-check
+  /// path). The UI flips back to "Check-in" the moment the user
+  /// taps the green Visited button; the follow-up
+  /// `fetchRemoteCounts` reconciles the persisted count once the
+  /// DELETE round-trip completes.
+  void unbumpLocalCheckinCount() {
+    if (_remoteCheckinCount > 0) _remoteCheckinCount -= 1;
+    notifyListeners();
+    debugPrint(
+      'PlaceProvider.unbumpLocalCheckinCount -> $_remoteCheckinCount',
+    );
+  }
+
   /// Optimistic local increment of the remote saved-places counter. The
   /// UI updates immediately so the Profile screen never flashes 0 while
   /// the Supabase upsert is in flight. Reconciled by the next
