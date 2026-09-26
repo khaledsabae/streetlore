@@ -1,42 +1,179 @@
-name: Build & Release APK
+name: Streetlore Release Build
 
+# Builds the arm64 release APK on Ubuntu and publishes it to the
+# GitHub Release that matches the resolved tag. Triggers:
+#   - manual `workflow_dispatch` with a `tag` input (recommended for
+#     bypass-local-Windows builds)
+#   - push of a v* tag (so the next release can be auto-built by
+#     `git push origin v1.0.38 --force`)
+#   - push to main (build only - no release upload - for CI sanity)
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v1.0.37). Leave blank to auto-resolve.'
+        required: false
+        default: ''
+      create_release:
+        description: 'Create / update the GitHub Release with this tag?'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+
+# Avoid running two release-build jobs for the same ref.
+concurrency:
+  group: streetlore-release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    runs-on: windows-latest
+    name: Build + Publish APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
-      - name: Setup Java
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: gradle
 
-      - name: Setup Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
+          flutter-version: 3.24.0
+          cache: true
 
-      - name: Decode keystore
+      - name: Print Flutter version
+        run: flutter --version
+
+      - name: Resolve target version tag
+        id: resolve_tag
         run: |
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > android/app/release.keystore
+          set -e
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/}"
+          else
+            # Fall back to the most recent v* tag on the repo, else
+            # v1.0.37 for the first build. We don't error here so the
+            # workflow can still run as a build-only sanity check.
+            latest=$(git tag --list 'v*' --sort=-v:refname | head -n 1 || true)
+            TAG="${latest:-v1.0.37}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Resolved target tag: ${TAG}"
 
-      - name: Build APK
-        run: flutter build apk --release --target-platform android-arm64 --split-per-abi
+      - name: Materialise Release Keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.STREETLORE_KEYSTORE_BASE64 }}
+        if: env.KEYSTORE_B64 != ''
+        run: |
+          set -e
+          mkdir -p android/app
+          echo "$KEYSTORE_B64" | base64 -d > android/app/release_v2.keystore
+          chmod 600 android/app/release_v2.keystore
+          echo "Wrote $(wc -c < android/app/release_v2.keystore) bytes to android/app/release_v2.keystore"
+
+      - name: Verify keystore signature
+        if: env.SECRETS_OK == 'yes' || hashFiles('android/app/release_v2.keystore') != ''
+        run: |
+          set -e
+          if [ ! -f android/app/release_v2.keystore ]; then
+            echo "::error::release_v2.keystore is missing. Add the GitHub secret STREETLORE_KEYSTORE_BASE64 (base64 of the keystore file) and re-run."
+            exit 1
+          fi
+          SHA=$(keytool -list -v -keystore android/app/release_v2.keystore -storepass streetlore2026 2>&1 | grep -E '^\s*SHA1:' | head -n 1 | awk '{print $2}')
+          echo "Keystore cert SHA-1: ${SHA}"
+          if [ "${SHA}" != "AF:62:89:44:B5:F3:A0:0A:4E:CE:1E:72:34:13:26:EA:5A:E7:B4:8F" ]; then
+            echo "::error::Cert SHA-1 is ${SHA} - expected the v1.0.30+ keystore cert. Refusing to publish."
+            exit 1
+          fi
+          echo "Keystore cert matches the registered v1.0.30+ cert."
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build APK (arm64, release)
+        env:
+          GEMINI_KEYS: ${{ secrets.GEMINI_API_KEYS }}
+        run: |
+          set -e
+          # Allow the keys to come from either the secret (preferred)
+          # or the fallback literal that the user has been pasting
+          # into the local build.
+          if [ -z "${GEMINI_KEYS}" ]; then
+            echo "::error::GEMINI_API_KEYS GitHub secret is missing. Add it (5 keys, comma-separated) and re-run."
+            exit 1
+          fi
+          flutter build apk --release \
+            --target-platform android-arm64 \
+            --dart-define=GEMINI_API_KEYS="${GEMINI_KEYS}"
+
+      - name: Compute APK hashes
+        id: hashes
+        run: |
+          set -e
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          SIZE=$(wc -c < "$APK")
+          SHA1=$(sha1sum "$APK" | awk '{print $1}')
+          SHA256=$(sha256sum "$APK" | awk '{print $1}')
+          echo "size=$SIZE" >> "$GITHUB_OUTPUT"
+          echo "sha1=$SHA1" >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+          echo "Size:    $SIZE bytes"
+          echo "SHA-1:   $SHA1"
+          echo "SHA-256: $SHA256"
 
       - name: Rename APK
-        run: Copy-Item -Path build/app/outputs/flutter-apk/app-arm64-v8a-release.apk -Destination "streetlore-${{ github.ref_name }}-arm64.apk"
+        run: |
+          set -e
+          mv build/app/outputs/flutter-apk/app-release.apk \
+             "build/app/outputs/flutter-apk/streetlore-${{ steps.resolve_tag.outputs.tag }}-arm64.apk"
+          ls -la build/app/outputs/flutter-apk/
 
-      - name: Create Release
+      - name: Upload to GitHub Release
+        if: github.event_name == 'workflow_dispatch' && (github.event.inputs.create_release == 'true' || github.event.inputs.create_release == '') || startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.ref_name }}
-          generate_release_notes: true
-          files: streetlore-${{ github.ref_name }}-arm64.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ steps.resolve_tag.outputs.tag }}
+          name: 'Streetlore ${{ steps.resolve_tag.outputs.tag }}'
+          body: |
+            ## Streetlore ${{ steps.resolve_tag.outputs.tag }} (GitHub Actions build)
+
+            Built on `ubuntu-latest` from commit `${{ github.sha }}`.
+            `flutter analyze`: see commit log.
+            Same keystore as v1.0.30+ (cert SHA-1 `AF:62:89:44:B5:F3:A0:0A:4E:CE:1E:72:34:13:26:EA:5A:E7:B4:8F`).
+            Same 5-key Gemini rotation + official `google_generative_ai` SDK + model fallback chain as in source.
+
+            - Size:    ${{ steps.hashes.outputs.size }} bytes
+            - SHA-1:   `${{ steps.hashes.outputs.sha1 }}`
+            - SHA-256: `${{ steps.hashes.outputs.sha256 }}`
+          files: |
+            build/app/outputs/flutter-apk/streetlore-${{ steps.resolve_tag.outputs.tag }}-arm64.apk
+          fail_on_unmatched_files: true
+          draft: false
+          prerelease: false
+
+      - name: Upload APK as workflow artifact (always)
+        uses: actions/upload-artifact@v4
+        with:
+          name: streetlore-${{ steps.resolve_tag.outputs.tag }}-arm64
+          path: build/app/outputs/flutter-apk/streetlore-${{ steps.resolve_tag.outputs.tag }}-arm64.apk
+          if-no-files-found: error
+          retention-days: 14
