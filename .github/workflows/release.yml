@@ -55,7 +55,11 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: 3.24.0
+          # Pin a major that matches the local dev box (3.44.x here)
+          # so the same Dart SDK constraint in pubspec.yaml resolves
+          # to the same package versions. Override with the actual
+          # version you want if you have a preference.
+          flutter-version: 3.44.x
           cache: true
 
       - name: Print Flutter version
