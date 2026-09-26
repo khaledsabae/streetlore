@@ -59,7 +59,51 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshNearby();
+      // v1.0.37: hydrate the green-check state from Supabase so the
+      // button stays green when the user returns to a place they
+      // already checked in at, instead of resetting to "Check in"
+      // and letting a tap fire a duplicate upsert.
+      _loadCheckinState();
     });
+  }
+
+  /// v1.0.37: query `place_checkins` for the signed-in user at this
+  /// place id. If any row matches, set `_isVisited = true` so the
+  /// "Check-in" quick action renders as the green check + "Visited"
+  /// label and a second tap is a no-op. Failures are logged but do
+  /// not throw - missing connectivity just means we fall back to the
+  /// local "not visited" state until the next refresh.
+  Future<void> _loadCheckinState() async {
+    if (!mounted) return;
+    final userId =
+        Supabase.instance.client.auth.currentUser?.id ?? '';
+    if (userId.isEmpty) return;
+    try {
+      final res = await Supabase.instance.client
+          .from('place_checkins')
+          .select('place_id')
+          .eq('user_id', userId)
+          .eq('place_id', widget.place.id)
+          .limit(1);
+      if (!mounted) return;
+      final checked = res.isNotEmpty;
+      if (checked && !_isVisited) {
+        setState(() => _isVisited = true);
+        debugPrint(
+          'place_details _loadCheckinState: place ${widget.place.id} '
+          'already checked in for user $userId - _isVisited=true',
+        );
+      } else if (!checked && _isVisited) {
+        // Defensive: if the local state is "visited" but the DB has
+        // no row (e.g. account switch), reset it.
+        setState(() => _isVisited = false);
+      }
+    } catch (e) {
+      debugPrint(
+        'place_details _loadCheckinState: '
+        'failed to query place_checkins: $e',
+      );
+    }
   }
 
   void _refreshNearby() {
@@ -497,17 +541,30 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                           () => _isVisited = true,
                                         );
                                         try {
-                                          // Direct upsert, exactly as
-                                          // the user spec asked for.
-                                          // `.select()` forces RLS errors
-                                          // and PostgrestException to
-                                          // throw so we can show them.
+                                          // v1.0.37: direct upsert with
+                                          // `onConflict: 'user_id, place_id'`
+                                          // per the user spec, so a
+                                          // second tap on a place the
+                                          // user already checked in at
+                                          // is a graceful UPDATE (not a
+                                          // duplicate INSERT that
+                                          // surfaces a red
+                                          // `[23505] duplicate key
+                                          // value violates unique
+                                          // constraint` SnackBar).
+                                          // NOTE: this requires a
+                                          // unique constraint
+                                          // (user_id, place_id) on the
+                                          // `place_checkins` table -
+                                          // SQL included in the release
+                                          // notes.
                                           await Supabase.instance.client
                                               .from('place_checkins')
                                               .upsert({
                                             'user_id': userId,
                                             'place_id': place.id,
-                                          }).select();
+                                          }, onConflict: 'user_id, place_id')
+                                              .select();
                                           // ============================================
                                           // "IMMEDIATELY after this line
                                           // executes without throwing,

@@ -60,14 +60,17 @@ class AppConfig {
     }
   }
 
-  /// Gemini model identifier. v1.0.36 reverts to `gemini-1.5-flash`
-  /// because the user wants the OFFICIAL `google_generative_ai` SDK
-  /// (which uses `x-goog-api-key` header auth + `x-goog-api-client`
-  /// tracking). The 5-key rotation stays in `GeminiRestClient` so a
-  /// single dead key doesn't take the AI Tour Guide down.
-/// (v1.0.35 had tried `gemini-1.5-flash-latest` against the manual
-/// REST client and the user reported it was still 404'ing.)
-static const String geminiModel = 'gemini-1.5-flash';
+  /// Gemini model identifier. v1.0.37 points at the newest stable
+  /// 1.5-Flash build (`gemini-1.5-flash-002`) which is the first
+  /// entry in `GeminiRestClient._modelFallbackOrder`. `GeminiRestClient`
+  /// automatically tries each entry in the fallback chain on a 404
+  /// NOT_FOUND before burning the key, so if `gemini-1.5-flash-002`
+  /// ever gets rolled off the v1beta endpoint the wrapper will
+  /// silently try `gemini-1.5-flash-001`, then the bare
+  /// `gemini-1.5-flash`, then `gemini-1.0-pro` (same key, different
+  /// model). The 5-key rotation from v1.0.34 and the SDK
+  /// `x-goog-api-key` header from v1.0.36 are unchanged.
+  static const String geminiModel = 'gemini-1.5-flash-002';
   static const bool geminiEnabled = true;
   static const bool newFeaturesEnabled = true;
   static const int defaultGeofenceRadius = 500;

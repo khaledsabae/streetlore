@@ -30,6 +30,25 @@ class GeminiRestClient {
 
   static const Duration _timeout = Duration(seconds: 45);
 
+  /// v1.0.37 model fallback chain. Tried in order for EVERY key in
+  /// the rotation; a 404 NOT_FOUND on one model name silently moves
+  /// to the next name (same key, different model). The SDK still
+  /// uses the official `x-goog-api-key` header auth + 5-key rotation
+  /// on 401/403/429/5xx/timeouts; this list just adds a per-key
+  /// model failover on top of that. Order chosen to prefer the
+  /// most-recent stable build first, falling back to the original
+  /// `gemini-1.5-flash`, then finally `gemini-1.0-pro`.
+  ///
+  /// The `model` argument from callers is prepended (deduped) so
+  /// future callers can opt into a new model without changing this
+  /// file.
+  static const List<String> _modelFallbackOrder = [
+    'gemini-1.5-flash-002',
+    'gemini-1.5-flash-001',
+    'gemini-1.5-flash',
+    'gemini-1.0-pro',
+  ];
+
   /// Send a `generateContent` request.
   ///
   /// Returns the concatenated text of the first candidate, or a
@@ -37,9 +56,15 @@ class GeminiRestClient {
   /// failures are logged and returned so callers can decide on their
   /// own fallback.
   ///
-  /// If [apiKeys] (or [apiKey]) is null/empty, falls back to the keys
-  /// defined in [AppConfig.geminiApiKeys] and rotates through them on
-  /// 401 / 403 / 429 / 5xx / network failures.
+  /// If [apiKeys] (or [apiKey]) is null/empty, falls back to the
+  /// keys defined in [AppConfig.geminiApiKeys].
+  ///
+  /// Failure handling:
+  ///  - 401 / 403 / 429 / 5xx -> rotate to the next key
+  ///  - 404 NOT_FOUND on a specific MODEL name -> rotate within the
+  ///    [model] list using the same key
+  ///  - 400 / "not found" + non-rotation status -> surface immediately
+  ///  - network/timeout -> rotate to the next key
   Future<GeminiResult?> generateContent({
     String? apiKey,
     List<String>? apiKeys,
@@ -69,151 +94,188 @@ class GeminiRestClient {
       return null;
     }
 
+    // Build the ordered model list. The caller's `model` argument
+    // goes first (if it's not already in the fallback chain) so a
+    // future caller wanting a new model can opt in without a
+    // client update.
+    final models = <String>[model];
+    for (final m in _modelFallbackOrder) {
+      if (!models.contains(m)) models.add(m);
+    }
+
     final body = '$systemInstruction\n\n$userPrompt';
 
     GeminiResult? lastResult;
-    for (var i = 0; i < keys.length; i++) {
-      final key = keys[i];
+    keyLoop:
+    for (var ki = 0; ki < keys.length; ki++) {
+      final key = keys[ki];
       final keyRedacted = key.length > 8
           ? '${key.substring(0, 4)}...${key.substring(key.length - 4)}'
           : '****';
-      debugPrintGemini(
-        'SDK call: model=$model key=$keyRedacted keyLen=${key.length} '
-        'attempt=${i + 1}/${keys.length}',
-      );
-      try {
-        final m = GenerativeModel(
-          model: model,
-          apiKey: key,
-          generationConfig: GenerationConfig(
-            temperature: temperature,
-            maxOutputTokens: maxOutputTokens,
-          ),
+      for (var mi = 0; mi < models.length; mi++) {
+        final tryModel = models[mi];
+        debugPrintGemini(
+          'SDK call: model=$tryModel key=$keyRedacted '
+          'keyAttempt=${ki + 1}/${keys.length} '
+          'modelAttempt=${mi + 1}/${models.length}',
         );
-        final response = await m
-            .generateContent([Content.text(body)])
-            .timeout(_timeout);
-        final text = response.text;
-        if (text == null || text.isEmpty) {
-          debugPrintGemini(
-            'SDK call: 200 but empty text on key #${i + 1}',
+        try {
+          final m = GenerativeModel(
+            model: tryModel,
+            apiKey: key,
+            generationConfig: GenerationConfig(
+              temperature: temperature,
+              maxOutputTokens: maxOutputTokens,
+            ),
           );
-          // Surface the empty result so the caller can fall back to
-          // a local response. Don't silently try another key on an
-          // empty success — that's a content issue, not a key issue.
-          return const GeminiResult(
-            text: null,
+          final response = await m
+              .generateContent([Content.text(body)])
+              .timeout(_timeout);
+          final text = response.text;
+          if (text == null || text.isEmpty) {
+            debugPrintGemini(
+              'SDK call: 200 but empty text on '
+              'key #${ki + 1}, model=$tryModel',
+            );
+            // Empty success is a content issue, not a key / model
+            // issue — surface it to the caller immediately so it can
+            // fall back to a local response.
+            return const GeminiResult(
+              text: null,
+              statusCode: 200,
+              errorBody: 'empty text',
+              raw: null,
+            );
+          }
+          return GeminiResult(
+            text: text,
             statusCode: 200,
-            errorBody: 'empty text',
+            errorBody: null,
             raw: null,
           );
-        }
-        return GeminiResult(
-          text: text,
-          statusCode: 200,
-          errorBody: null,
-          raw: null,
-        );
-      } on InvalidApiKey catch (e) {
-        // 401-class — that key is dead, try the next one.
-        debugPrintGemini(
-          'SDK call: InvalidApiKey on key #${i + 1}: ${e.message}',
-        );
-        lastResult = GeminiResult(
-          text: null,
-          statusCode: 401,
-          errorBody: e.message,
-          raw: null,
-        );
-      } on UnsupportedUserLocation catch (e) {
-        // 403-class (permitted? usually billing), try next key.
-        debugPrintGemini(
-          'SDK call: UnsupportedUserLocation on key #${i + 1}: '
-          '${e.message}',
-        );
-        lastResult = GeminiResult(
-          text: null,
-          statusCode: 403,
-          errorBody: e.message,
-          raw: null,
-        );
-      } on ServerException catch (e) {
-        // The SDK only attaches the status code for 5xx (via the
-        // 'Server Error [NNN]: ...' format), but for 4xx it just
-        // gives us the human message. Try to pull the status code
-        // out of the message text (`[404]`, `[429]`, etc.); otherwise
-        // inspect the message itself.
-        final status = _classifyExceptionMessage(e.message);
-        debugPrintGemini(
-          'SDK call: ServerException on key #${i + 1} '
-          '(status=$status): ${e.message}',
-        );
-        lastResult = GeminiResult(
-          text: null,
-          statusCode: status,
-          errorBody: e.message,
-          raw: null,
-        );
-        if (status > 0 && !_shouldRotateKey(status)) {
+        } on InvalidApiKey catch (e) {
+          // 401-class — that KEY is dead; try the next key with the
+          // same model list reset.
           debugPrintGemini(
-            'SDK call: non-rotation status $status on key #${i + 1}, '
-            'surfacing without burning more keys',
+            'SDK call: InvalidApiKey on key #${ki + 1}, '
+            'model=$tryModel: ${e.message}',
+          );
+          lastResult = GeminiResult(
+            text: null,
+            statusCode: 401,
+            errorBody: e.message,
+            raw: null,
+          );
+          continue keyLoop; // skip remaining models for this key
+        } on UnsupportedUserLocation catch (e) {
+          // 403-class — same treatment.
+          debugPrintGemini(
+            'SDK call: UnsupportedUserLocation on key #${ki + 1}, '
+            'model=$tryModel: ${e.message}',
+          );
+          lastResult = GeminiResult(
+            text: null,
+            statusCode: 403,
+            errorBody: e.message,
+            raw: null,
+          );
+          continue keyLoop;
+        } on ServerException catch (e) {
+          final status = _classifyExceptionMessage(e.message);
+          debugPrintGemini(
+            'SDK call: ServerException on key #${ki + 1}, '
+            'model=$tryModel (status=$status): ${e.message}',
+          );
+          lastResult = GeminiResult(
+            text: null,
+            statusCode: status,
+            errorBody: e.message,
+            raw: null,
+          );
+          if (status == 404) {
+            // ============================================================
+            // v1.0.37 RADICAL FIX: 404 means "this MODEL is unavailable
+            // for this API version" - NOT a key failure. Drop to the
+            // next model in the chain with the SAME key before burning
+            // the key.
+            // ============================================================
+            debugPrintGemini(
+              'SDK call: model $tryModel 404 on key #${ki + 1}, '
+              'trying next model name with same key',
+            );
+            continue; // try next model
+          }
+          if (status > 0 && !_shouldRotateKey(status)) {
+            debugPrintGemini(
+              'SDK call: non-rotation status $status on key '
+              '#${ki + 1}, model=$tryModel, surfacing without '
+              'burning more keys',
+            );
+            return lastResult;
+          }
+          // Rotation status (429/5xx): break out of inner loop and
+          // try the next key.
+          continue keyLoop;
+        } on GenerativeAIException catch (e) {
+          // 5xx-style: SDK throws `GenerativeAIException('Server
+          // Error [500]: ...')`. Status code parsed out of message.
+          final status = _parseStatusFromMessage(e.message);
+          debugPrintGemini(
+            'SDK call: GenerativeAIException on key #${ki + 1}, '
+            'model=$tryModel (status=$status): ${e.message}',
+          );
+          lastResult = GeminiResult(
+            text: null,
+            statusCode: status,
+            errorBody: e.message,
+            raw: null,
+          );
+          if (status > 0 && !_shouldRotateKey(status)) {
+            return lastResult;
+          }
+          continue keyLoop;
+        } on GenerativeAISdkException catch (e) {
+          // SDK has a stale package version / implementation bug.
+          // Surface immediately so the user sees something actionable
+          // in logcat.
+          debugPrintGemini(
+            'SDK call: GenerativeAISdkException on key #${ki + 1}, '
+            'model=$tryModel: $e',
+          );
+          lastResult = GeminiResult(
+            text: null,
+            statusCode: 0,
+            errorBody: e.message,
+            raw: null,
           );
           return lastResult;
+        } on TimeoutException {
+          debugPrintGemini(
+            'SDK call: timeout on key #${ki + 1}, '
+            'model=$tryModel',
+          );
+          lastResult = const GeminiResult(
+            text: null,
+            statusCode: 0,
+            errorBody: 'timeout',
+            raw: null,
+          );
+          // Timeout could be a key issue or a network issue;
+          // rotate to next key.
+          continue keyLoop;
+        } catch (e) {
+          debugPrintGemini(
+            'SDK call: unknown exception on key #${ki + 1}, '
+            'model=$tryModel: $e',
+          );
+          lastResult = GeminiResult(
+            text: null,
+            statusCode: 0,
+            errorBody: e.toString(),
+            raw: null,
+          );
+          continue keyLoop;
         }
-      } on GenerativeAIException catch (e) {
-        // Catch-all for the SDK's base exception type (used by the
-        // underlying makeRequest() when statusCode >= 500: the SDK
-        // throws `GenerativeAIException('Server Error [500]: ...')`).
-        final status = _parseStatusFromMessage(e.message);
-        debugPrintGemini(
-          'SDK call: GenerativeAIException on key #${i + 1} '
-          '(status=$status): ${e.message}',
-        );
-        lastResult = GeminiResult(
-          text: null,
-          statusCode: status,
-          errorBody: e.message,
-          raw: null,
-        );
-        if (status > 0 && !_shouldRotateKey(status)) {
-          return lastResult;
-        }
-      } on GenerativeAISdkException catch (e) {
-        // SDK has a stale package version / implementation bug. Treat
-        // as a hard failure so the user sees something actionable in
-        // logcat.
-        debugPrintGemini(
-          'SDK call: GenerativeAISdkException on key #${i + 1}: '
-          '$e',
-        );
-        lastResult = GeminiResult(
-          text: null,
-          statusCode: 0,
-          errorBody: e.message,
-          raw: null,
-        );
-        // Don't keep rotating on a code bug — surface it after the
-        // first failure.
-        return lastResult;
-      } on TimeoutException {
-        debugPrintGemini('SDK call: timeout on key #${i + 1}');
-        lastResult = const GeminiResult(
-          text: null,
-          statusCode: 0,
-          errorBody: 'timeout',
-          raw: null,
-        );
-      } catch (e) {
-        debugPrintGemini(
-          'SDK call: unknown exception on key #${i + 1}: $e',
-        );
-        lastResult = GeminiResult(
-          text: null,
-          statusCode: 0,
-          errorBody: e.toString(),
-          raw: null,
-        );
       }
     }
     return lastResult;
