@@ -719,6 +719,22 @@ class AppStrings {
     'admin_submit': {'en': 'Add to map', 'ar': 'أضف للخريطة'},
     'admin_added': {'en': 'Added', 'ar': 'اتضاف'},
     'admin_failed': {'en': 'Failed', 'ar': 'فشل'},
+    'admin_location_search': {
+      'en': 'Location search (Nominatim / OpenStreetMap)',
+      'ar': 'بحث عن موقع (Nominatim / OpenStreetMap)',
+    },
+    'admin_location_search_hint': {
+      'en': 'Type a place name or address (e.g. "Bibliotheca Alexandrina")',
+      'ar': 'اكتب اسم مكان أو عنوان (مثلاً "Bibliotheca Alexandrina")',
+    },
+    'admin_location_no_results': {
+      'en': 'No results. Try a more specific query.',
+      'ar': 'مفيش نتائج. جرّب استعلام أعم.',
+    },
+    'admin_err_location': {
+      'en': 'Pick a location from the search results first.',
+      'ar': 'اختار موقع من نتائج البحث الأول.',
+    },
     'emg_call_failed': {
       'en': 'Cannot place call to {n}',
       'ar': 'تعذر الاتصال بـ {n}',
