@@ -25,8 +25,43 @@ class PlaceProvider extends ChangeNotifier {
 
   int _remoteSavedCount = 0;
   int _remoteCheckinCount = 0;
+  /// v1.0.39: monotonic lifetime check-in count. Incremented only
+  /// on a successful check-in (never decremented on uncheck) and
+  /// persisted to SharedPreferences so it survives cold start.
+  /// Reconciled against the server count by `fetchRemoteCounts`
+  /// (which only ever raises it, never lowers it). The Profile
+  /// screen's "Explored" counter uses this so a check-in +
+  /// uncheck sequence still increments the achievement.
+  int _lifetimeCheckinCount = 0;
+  static const String _kLifetimeCheckinKey = 'lifetime_checkin_count_v1';
+
   int get remoteSavedCount => _remoteSavedCount;
   int get remoteCheckinCount => _remoteCheckinCount;
+  int get lifetimeCheckinCount => _lifetimeCheckinCount;
+
+  PlaceProvider() {
+    _loadSavedPlaces();
+    _loadLifetimeCheckin();
+  }
+
+  Future<void> _loadLifetimeCheckin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _lifetimeCheckinCount = prefs.getInt(_kLifetimeCheckinKey) ?? 0;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('PlaceProvider._loadLifetimeCheckin: $e');
+    }
+  }
+
+  Future<void> _saveLifetimeCheckin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_kLifetimeCheckinKey, _lifetimeCheckinCount);
+    } catch (e) {
+      debugPrint('PlaceProvider._saveLifetimeCheckin: $e');
+    }
+  }
 
   Future<void> fetchRemoteCounts(String userId) async {
     if (userId.isEmpty) return;
@@ -44,8 +79,15 @@ class PlaceProvider extends ChangeNotifier {
           .eq('user_id', userId)
           .count(CountOption.exact);
       _remoteCheckinCount = checkinRes.count;
+      // v1.0.39: raise the monotonic lifetime if the server count
+      // is higher (e.g. user checked in from another device). Never
+      // lower it - the local counter is the source of truth.
+      if (checkinRes.count > _lifetimeCheckinCount) {
+        _lifetimeCheckinCount = checkinRes.count;
+        await _saveLifetimeCheckin();
+      }
 
-      debugPrint('Remote counts: saved=$_remoteSavedCount, checkins=$_remoteCheckinCount');
+      debugPrint('Remote counts: saved=$_remoteSavedCount, checkins=$_remoteCheckinCount, lifetime=$_lifetimeCheckinCount');
       notifyListeners();
     } catch (e) {
       debugPrint('fetchRemoteCounts error: $e');
@@ -57,11 +99,18 @@ class PlaceProvider extends ChangeNotifier {
   /// cannot wait for `fetchRemoteCounts` to round-trip Supabase. The
   /// counter will be reconciled by the follow-up `fetchRemoteCounts`
   /// call the check-in screen fires right after this.
+  ///
+  /// v1.0.39: also bumps [lifetimeCheckinCount] and persists it to
+  /// SharedPreferences. The lifetime counter never decreases on
+  /// uncheck, so the Profile "Explored" digit only goes up.
   void bumpLocalCheckinCount() {
     _remoteCheckinCount += 1;
+    _lifetimeCheckinCount += 1;
+    _saveLifetimeCheckin();
     notifyListeners();
     debugPrint(
-      'PlaceProvider.bumpLocalCheckinCount -> $_remoteCheckinCount',
+      'PlaceProvider.bumpLocalCheckinCount -> '
+      'remote=$_remoteCheckinCount lifetime=$_lifetimeCheckinCount',
     );
   }
 
@@ -71,11 +120,16 @@ class PlaceProvider extends ChangeNotifier {
   /// taps the green Visited button; the follow-up
   /// `fetchRemoteCounts` reconciles the persisted count once the
   /// DELETE round-trip completes.
+  ///
+  /// v1.0.39: NO-OP for [lifetimeCheckinCount] - we keep the
+  /// achievement counter monotonic, so uncheck decrements only the
+  /// "currently active" count.
   void unbumpLocalCheckinCount() {
     if (_remoteCheckinCount > 0) _remoteCheckinCount -= 1;
     notifyListeners();
     debugPrint(
-      'PlaceProvider.unbumpLocalCheckinCount -> $_remoteCheckinCount',
+      'PlaceProvider.unbumpLocalCheckinCount -> '
+      'remote=$_remoteCheckinCount lifetime=$_lifetimeCheckinCount',
     );
   }
 
@@ -114,10 +168,6 @@ class PlaceProvider extends ChangeNotifier {
   bool get isFilterNearest => _isFilterNearest;
   PriceLevel? get maxPriceLevel => _maxPriceLevel;
   bool get onlyFree => _onlyFree;
-
-  PlaceProvider() {
-    _loadSavedPlaces();
-  }
 
   Future<void> loadPlaces({bool force = false}) async {
     if (_loading) return;

@@ -311,17 +311,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               height: 36,
                               color: Colors.white.withValues(alpha: 0.2),
                             ),
-                            // Explored counter: real gamification count
-                            // falls back to MAX(saved, gamification) so
-                            // a user with saved places but a fresh
-                            // remote row (= 0) still sees a real number.
+                            // Explored counter: lifetime check-in
+                            // count (monotonic, NOT decremented on
+                            // uncheck) drives the headline digit so a
+                            // check-in + uncheck sequence still
+                            // increments the achievement. Falls back
+                            // to MAX(saved, remote, gamification)
+                            // for first-launch / cold-start edge
+                            // cases where lifetime hasn't been
+                            // populated yet.
                             _Stat(
                               label: context.tr('prof_explored'),
                               numericValue: () {
                                 final local = placeP.savedPlaces.length;
                                 final remoteCheckins = placeP.remoteCheckinCount;
+                                final lifetime = placeP.lifetimeCheckinCount;
                                 final gamVisited = gamification.stats.placesVisited;
-                                final best = [local, remoteCheckins, gamVisited].reduce((a, b) => a > b ? a : b);
+                                final best = [local, remoteCheckins, lifetime, gamVisited]
+                                    .reduce((a, b) => a > b ? a : b);
                                 return best;
                               }(),
                               icon: Icons.explore_rounded,

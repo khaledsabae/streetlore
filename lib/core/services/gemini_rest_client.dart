@@ -65,10 +65,13 @@ class GeminiRestClient {
   /// display verbatim to the user (no further exception handling).
   static const int _friendlyFallbackStatus = 599;
 
-  /// Friendlier fallback text shown in the AI Tour Guide chat
-  /// bubble when all 5 keys × 3 models have failed. Streamed
-  /// directly into `result.text` so the chat renders it as a
-  /// reply, not an error.
+  /// Base friendly fallback text shown in the AI Tour Guide chat
+  /// bubble when all 5 keys × 3 models have failed. The v1.0.39
+  /// build appends the last (key, model) HTTP status code in
+  /// parentheses so the user can tell at a glance whether the
+  /// failure was a 401/403 (key / quota / model issue) vs a 5xx
+  /// (transient upstream). The full raw errorBody is still
+  /// preserved on `GeminiResult.errorBody` for logcat debug.
   static const String _friendlyFallbackText =
       "Sorry, I am currently unavailable. Please try again in a moment.";
 
@@ -331,8 +334,23 @@ class GeminiRestClient {
     // into it. Callers that want the raw last error can still read
     // `lastResult?.errorBody`.
     // ============================================================
+    // v1.0.39: append the last HTTP status code to the friendly
+    // text so the user can tell whether it's a 401/403 (auth /
+    // quota / wrong model) or a 5xx (transient upstream) or a
+    // network error (status 0). We only include the code if it's
+    // a recognised status - otherwise the user just sees the
+    // base message and the full errorBody is preserved on the
+    // result for logcat.
+    final lastStatus = lastResult?.statusCode ?? 0;
+    final friendlyText = lastStatus > 0 && lastStatus != _friendlyFallbackStatus
+        ? '$_friendlyFallbackText (Error: $lastStatus)'
+        : _friendlyFallbackText;
+    debugPrintGemini(
+      'SDK call: ALL ${keys.length}x${models.length} attempts failed; '
+      'last status=$lastStatus, last errorBody=${lastResult?.errorBody}',
+    );
     return GeminiResult(
-      text: _friendlyFallbackText,
+      text: friendlyText,
       statusCode: _friendlyFallbackStatus,
       errorBody: lastResult?.errorBody ??
           'all ${keys.length} keys x ${models.length} models failed',

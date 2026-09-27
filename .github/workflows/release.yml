@@ -130,6 +130,12 @@ jobs:
             echo "::error::GEMINI_API_KEYS GitHub secret is missing. Add it (5 keys, comma-separated) and re-run."
             exit 1
           fi
+          KEY_COUNT=$(echo "${GEMINI_KEYS}" | tr ',' '\n' | wc -l)
+          # Print only length + count - never echo the actual key
+          # text because GitHub Actions auto-masks anything that
+          # matches a secret value. From the log we can still tell
+          # whether the secret was populated.
+          echo "GEMINI_API_KEYS loaded: ${#GEMINI_KEYS} chars, ${KEY_COUNT} comma-separated entries"
           flutter build apk --release \
             --target-platform android-arm64 \
             --dart-define=GEMINI_API_KEYS="${GEMINI_KEYS}"
