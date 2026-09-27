@@ -408,6 +408,60 @@ class AppLocalizationsAr extends AppLocalizations {
   String get emg_title => 'الطوارئ';
 
   @override
+  String get admin_title => 'لوحة الإدارة';
+
+  @override
+  String get admin_forbidden => 'للمشرفين فقط';
+
+  @override
+  String get admin_forbidden_sub => 'حسابك مش مخوّل بإضافة أماكن.';
+
+  @override
+  String get admin_add_new => 'إضافة مكان';
+
+  @override
+  String get admin_view_list => 'قائمة الأماكن';
+
+  @override
+  String get admin_field_name => 'الاسم';
+
+  @override
+  String get admin_field_category => 'الفئة';
+
+  @override
+  String get admin_field_address => 'العنوان';
+
+  @override
+  String get admin_field_description => 'الوصف';
+
+  @override
+  String get admin_field_image => 'الصورة';
+
+  @override
+  String get admin_field_hours => 'ساعات العمل';
+
+  @override
+  String get admin_field_rating => 'التقييم';
+
+  @override
+  String get admin_err_name => 'الاسم مطلوب';
+
+  @override
+  String get admin_err_category => 'الفئة مطلوبة (مثلاً ATM, Hotel, Cafe)';
+
+  @override
+  String get admin_err_address => 'العنوان مطلوب';
+
+  @override
+  String get admin_submit => 'أضف للخريطة';
+
+  @override
+  String get admin_added => 'اتضاف';
+
+  @override
+  String get admin_failed => 'فشل';
+
+  @override
   String get emg_transport => 'المواصلات';
 
   @override
@@ -694,6 +748,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get login_have_account => 'عندك حساب بالفعل؟';
+
+  @override
+  String get login_username => 'اسم المستخدم';
+
+  @override
+  String get login_username_hint => '3-20 حرف: حروف وأرقام و . _ -';
+
+  @override
+  String get login_err_username_empty => 'من فضلك ادخل اسم المستخدم';
+
+  @override
+  String get login_err_username_length => 'اسم المستخدم لازم يكون 3 لـ 20 حرف';
+
+  @override
+  String get login_err_username_chars => 'حروف وأرقام و . _ - فقط';
+
+  @override
+  String get username_invalid =>
+      'اسم المستخدم غير صالح (3-20 حرف، حروف/أرقام/._-)';
 
   @override
   String get login_no_account => 'مفيش حساب لسه؟';

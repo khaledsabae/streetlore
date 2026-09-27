@@ -689,6 +689,36 @@ class AppStrings {
     'bt_sunset': {'en': 'Sunset', 'ar': 'الغروب'},
 
     'emg_title': {'en': 'Emergency', 'ar': 'الطوارئ'},
+    'admin_title': {'en': 'Admin Panel', 'ar': 'لوحة الإدارة'},
+    'admin_forbidden': {
+      'en': 'Admin only',
+      'ar': 'للمشرفين فقط',
+    },
+    'admin_forbidden_sub': {
+      'en': 'Your account is not authorised to add places.',
+      'ar': 'حسابك مش مخوّل بإضافة أماكن.',
+    },
+    'admin_add_new': {'en': 'Add new place', 'ar': 'إضافة مكان'},
+    'admin_view_list': {'en': 'View places list', 'ar': 'قائمة الأماكن'},
+    'admin_field_name': {'en': 'Name', 'ar': 'الاسم'},
+    'admin_field_category': {'en': 'Category', 'ar': 'الفئة'},
+    'admin_field_address': {'en': 'Address', 'ar': 'العنوان'},
+    'admin_field_description': {'en': 'Description', 'ar': 'الوصف'},
+    'admin_field_image': {'en': 'Image', 'ar': 'الصورة'},
+    'admin_field_hours': {'en': 'Open hours', 'ar': 'ساعات العمل'},
+    'admin_field_rating': {'en': 'Rating', 'ar': 'التقييم'},
+    'admin_err_name': {'en': 'Name is required', 'ar': 'الاسم مطلوب'},
+    'admin_err_category': {
+      'en': 'Category is required (e.g. ATM, Hotel, Cafe)',
+      'ar': 'الفئة مطلوبة (مثلاً ATM, Hotel, Cafe)',
+    },
+    'admin_err_address': {
+      'en': 'Address is required',
+      'ar': 'العنوان مطلوب',
+    },
+    'admin_submit': {'en': 'Add to map', 'ar': 'أضف للخريطة'},
+    'admin_added': {'en': 'Added', 'ar': 'اتضاف'},
+    'admin_failed': {'en': 'Failed', 'ar': 'فشل'},
     'emg_call_failed': {
       'en': 'Cannot place call to {n}',
       'ar': 'تعذر الاتصال بـ {n}',
@@ -776,6 +806,27 @@ class AppStrings {
     'login_have_account': {
       'en': 'Already have an account?',
       'ar': 'عندك حساب بالفعل؟',
+    },
+    'login_username': {'en': 'Username', 'ar': 'اسم المستخدم'},
+    'login_username_hint': {
+      'en': '3-20 chars: letters, digits, . _ -',
+      'ar': '3-20 حرف: حروف وأرقام و . _ -',
+    },
+    'login_err_username_empty': {
+      'en': 'Please enter a username',
+      'ar': 'من فضلك ادخل اسم المستخدم',
+    },
+    'login_err_username_length': {
+      'en': 'Username must be 3-20 characters',
+      'ar': 'اسم المستخدم لازم يكون 3 لـ 20 حرف',
+    },
+    'login_err_username_chars': {
+      'en': 'Only letters, digits, dot, underscore and dash',
+      'ar': 'حروف وأرقام و . _ - فقط',
+    },
+    'username_invalid': {
+      'en': 'Invalid username (3-20 chars, letters/digits/._-)',
+      'ar': 'اسم المستخدم غير صالح (3-20 حرف، حروف/أرقام/._-)',
     },
     'login_or': {'en': 'or', 'ar': 'أو'},
     'login_google': {'en': 'Google', 'ar': 'جوجل'},

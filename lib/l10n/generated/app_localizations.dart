@@ -848,6 +848,114 @@ abstract class AppLocalizations {
   /// **'Emergency'**
   String get emg_title;
 
+  /// Translation key: admin_title
+  ///
+  /// In en, this message translates to:
+  /// **'Admin Panel'**
+  String get admin_title;
+
+  /// Translation key: admin_forbidden
+  ///
+  /// In en, this message translates to:
+  /// **'Admin only'**
+  String get admin_forbidden;
+
+  /// Translation key: admin_forbidden_sub
+  ///
+  /// In en, this message translates to:
+  /// **'Your account is not authorised to add places.'**
+  String get admin_forbidden_sub;
+
+  /// Translation key: admin_add_new
+  ///
+  /// In en, this message translates to:
+  /// **'Add new place'**
+  String get admin_add_new;
+
+  /// Translation key: admin_view_list
+  ///
+  /// In en, this message translates to:
+  /// **'View places list'**
+  String get admin_view_list;
+
+  /// Translation key: admin_field_name
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get admin_field_name;
+
+  /// Translation key: admin_field_category
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get admin_field_category;
+
+  /// Translation key: admin_field_address
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get admin_field_address;
+
+  /// Translation key: admin_field_description
+  ///
+  /// In en, this message translates to:
+  /// **'Description'**
+  String get admin_field_description;
+
+  /// Translation key: admin_field_image
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get admin_field_image;
+
+  /// Translation key: admin_field_hours
+  ///
+  /// In en, this message translates to:
+  /// **'Open hours'**
+  String get admin_field_hours;
+
+  /// Translation key: admin_field_rating
+  ///
+  /// In en, this message translates to:
+  /// **'Rating'**
+  String get admin_field_rating;
+
+  /// Translation key: admin_err_name
+  ///
+  /// In en, this message translates to:
+  /// **'Name is required'**
+  String get admin_err_name;
+
+  /// Translation key: admin_err_category
+  ///
+  /// In en, this message translates to:
+  /// **'Category is required (e.g. ATM, Hotel, Cafe)'**
+  String get admin_err_category;
+
+  /// Translation key: admin_err_address
+  ///
+  /// In en, this message translates to:
+  /// **'Address is required'**
+  String get admin_err_address;
+
+  /// Translation key: admin_submit
+  ///
+  /// In en, this message translates to:
+  /// **'Add to map'**
+  String get admin_submit;
+
+  /// Translation key: admin_added
+  ///
+  /// In en, this message translates to:
+  /// **'Added'**
+  String get admin_added;
+
+  /// Translation key: admin_failed
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get admin_failed;
+
   /// Translation key: emg_transport
   ///
   /// In en, this message translates to:
@@ -1375,6 +1483,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Already have an account?'**
   String get login_have_account;
+
+  /// Translation key: login_username
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get login_username;
+
+  /// Translation key: login_username_hint
+  ///
+  /// In en, this message translates to:
+  /// **'3-20 chars: letters, digits, . _ -'**
+  String get login_username_hint;
+
+  /// Translation key: login_err_username_empty
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a username'**
+  String get login_err_username_empty;
+
+  /// Translation key: login_err_username_length
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be 3-20 characters'**
+  String get login_err_username_length;
+
+  /// Translation key: login_err_username_chars
+  ///
+  /// In en, this message translates to:
+  /// **'Only letters, digits, dot, underscore and dash'**
+  String get login_err_username_chars;
+
+  /// Translation key: username_invalid
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid username (3-20 chars, letters/digits/._-)'**
+  String get username_invalid;
 
   /// Translation key: login_no_account
   ///

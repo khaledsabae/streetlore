@@ -25,6 +25,7 @@ import 'currency_converter_screen.dart';
 import 'journal_screen.dart';
 import 'prayer_times_screen.dart';
 import 'achievements_screen.dart';
+import 'admin_panel_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -905,6 +906,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               MaterialPageRoute(
                                 builder: (_) => const CurrencyConverterScreen(),
                               ),
+                            );
+                          },
+                        ),
+                        _Div(),
+                        // v1.0.41: Admin Panel tile, only rendered when
+                        // AuthProvider.isAdmin returns true (gated by
+                        // email list / user_metadata.role check inside
+                        // the provider). Non-admin users never see this
+                        // row.
+                        Consumer<AuthProvider>(
+                          builder: (context, auth, _) {
+                            if (!auth.isAdmin) return const SizedBox.shrink();
+                            return _ActionTile(
+                              icon: Icons.admin_panel_settings_rounded,
+                              title: context.tr('admin_title'),
+                              subtitle:
+                                  '${context.tr('admin_field_category')}: '
+                                  'ATM / Hotel / Cafe / ...',
+                              color: const Color(0xFFEF4444),
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const AdminPanelScreen(),
+                                  ),
+                                );
+                              },
                             );
                           },
                         ),

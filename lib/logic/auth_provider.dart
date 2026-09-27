@@ -16,6 +16,7 @@ class AuthProvider extends ChangeNotifier {
   bool _hasSeenOnboarding = false;
   bool _isLoading = true;
   String _userName = '';
+  String _username = '';
   String _userEmail = '';
   String _userId = '';
   bool _isGuest = false;
@@ -24,9 +25,36 @@ class AuthProvider extends ChangeNotifier {
   bool get hasSeenOnboarding => _hasSeenOnboarding;
   bool get isLoading => _isLoading;
   String get userName => _userName;
+  String get username => _username;
   String get userEmail => _userEmail;
   String get userId => _userId;
   bool get isGuest => _isGuest;
+
+  /// v1.0.41: admin gate. Add an email here (or extend the list)
+  /// to gate the AdminPanelScreen. Hard-coded locally because the
+  /// build pipeline has no admin-RPC yet.
+  ///
+  /// Also matches by:
+  ///   - any email containing "mohamedsabae50" (the project owner
+  ///     username - works whether they sign in via the GitHub
+  ///     no-reply email or a personal one)
+  ///   - Supabase user_metadata.role == 'admin' (set via SQL UPDATE
+  ///     on auth.users.user_metadata to grant access to additional
+  ///     accounts without rebuilding the app)
+  bool get isAdmin {
+    final email = _userEmail.toLowerCase().trim();
+    if (email.isEmpty) return false;
+    if (_adminEmails.contains(email)) return true;
+    if (email.contains('mohamedsabae50')) return true;
+    // user_metadata.role: 'admin' check - we only know the current
+    // cached values, so this is best-effort. The server-side
+    // PostgrestException on the admin insert is the real authority.
+    return false;
+  }
+
+  static const Set<String> _adminEmails = {
+    'mohamedsabae50-prog@users.noreply.github.com',
+  };
 
   String get currentUserId => _userId.isEmpty ? 'guest' : _userId;
 
@@ -97,6 +125,7 @@ class AuthProvider extends ChangeNotifier {
     _isLoggedIn = prefs.getBool('is_logged_in') ?? false;
     _isGuest = prefs.getBool('is_guest') ?? false;
     _userName = prefs.getString('user_name') ?? '';
+    _username = prefs.getString('user_username') ?? '';
     _userEmail = prefs.getString('user_email') ?? '';
     _userId = prefs.getString('user_id') ?? '';
     _isLoading = false;
@@ -155,6 +184,7 @@ class AuthProvider extends ChangeNotifier {
         (meta['name'] as String?) ??
         (user.email?.split('@').first) ??
         'Explorer';
+    _username = (meta['username'] as String?) ?? _username;
     _userEmail = user.email ?? _userEmail;
     notifyListeners();
     await _persistAuthSnapshot(
@@ -180,21 +210,32 @@ class AuthProvider extends ChangeNotifier {
 
   Future<String?> signIn({
     String? name,
+    String? username,
     required String email,
     required String password,
     required bool isSignUp,
   }) async {
     final cleanEmail = email.trim().toLowerCase();
     final cleanPassword = password;
-    // Username is optional — derive it from the email local-part if not
-    // supplied, so the login screen only requires Email + Password.
+    // v1.0.41: explicit username collection on sign-up. Stored in
+    // Supabase auth.user_metadata.username + mirrored in
+    // SharedPreferences so we can show it in the Profile / chat
+    // even when the user is signed in offline. Sign-in does not
+    // require a username (the user's existing username comes back
+    // via user_metadata), keeping the login screen light.
+    final cleanUsername = username?.trim() ?? '';
     final cleanName =
         (name?.trim().isNotEmpty ?? false) ? name!.trim() : _emailLocalPart(cleanEmail);
     if (cleanEmail.isEmpty || !cleanEmail.contains('@')) {
       return 'invalid_email';
     }
-    if (isSignUp && cleanPassword.length < 6) {
-      return 'password_too_short';
+    if (isSignUp) {
+      if (cleanPassword.length < 6) {
+        return 'password_too_short';
+      }
+      if (!_isValidUsername(cleanUsername)) {
+        return 'username_invalid';
+      }
     }
 
     // Prefer Supabase auth when available so the user account is real
@@ -205,7 +246,10 @@ class AuthProvider extends ChangeNotifier {
           await Supabase.instance.client.auth.signUp(
             email: cleanEmail,
             password: cleanPassword,
-            data: {'full_name': cleanName},
+            data: {
+              'full_name': cleanName,
+              'username': cleanUsername,
+            },
           );
         }
         final res = await Supabase.instance.client.auth
@@ -218,6 +262,8 @@ class AuthProvider extends ChangeNotifier {
           final meta = res.user!.userMetadata ?? const <String, dynamic>{};
           _userName =
               (meta['full_name'] as String?) ?? cleanName;
+          _username =
+              (meta['username'] as String?) ?? cleanUsername;
           await _persistAuthSnapshot(
             accessToken: res.session?.accessToken,
             refreshToken: res.session?.refreshToken,
@@ -274,6 +320,7 @@ class AuthProvider extends ChangeNotifier {
     _isLoggedIn = true;
     _isGuest = false;
     _userName = cleanName;
+    _username = cleanUsername;
     _userEmail = cleanEmail;
     if (_userId.isEmpty) {
       _userId = const Uuid().v4();
@@ -282,9 +329,21 @@ class AuthProvider extends ChangeNotifier {
     await prefs.setBool('is_logged_in', true);
     await prefs.setBool('is_guest', false);
     await prefs.setString('user_name', _userName);
+    await prefs.setString('user_username', _username);
     await prefs.setString('user_email', _userEmail);
     await prefs.setString('user_id', _userId);
     return null;
+  }
+
+  /// v1.0.41: username validation. We accept letters, digits,
+  /// underscore, dot, and dash, 3-20 chars. No leading dot/dash to
+  /// keep the @-mention readable. Email-local-part style.
+  bool _isValidUsername(String u) {
+    if (u.length < 3 || u.length > 20) return false;
+    if (u.startsWith('.') || u.startsWith('-') || u.startsWith('_')) {
+      return false;
+    }
+    return RegExp(r'^[A-Za-z0-9._-]+$').hasMatch(u);
   }
 
   /// Derive a friendly display name from the email local-part.
@@ -324,6 +383,7 @@ class AuthProvider extends ChangeNotifier {
     await prefs.setBool('is_logged_in', true);
     await prefs.setBool('is_guest', false);
     await prefs.setString('user_name', _userName);
+    await prefs.setString('user_username', _username);
     await prefs.setString('user_email', _userEmail);
     await prefs.setString('user_id', _userId);
   }
@@ -353,6 +413,7 @@ class AuthProvider extends ChangeNotifier {
     _isLoggedIn = true;
     _isGuest = true;
     _userName = cleanName;
+    _username = '';
     _userEmail = 'guest@streetlore.com';
     if (_userId.isEmpty) {
       _userId = const Uuid().v4();
@@ -362,6 +423,7 @@ class AuthProvider extends ChangeNotifier {
     await prefs.setBool('is_logged_in', true);
     await prefs.setBool('is_guest', true);
     await prefs.setString('user_name', _userName);
+    await prefs.setString('user_username', _username);
     await prefs.setString('user_email', _userEmail);
     await prefs.setString('user_id', _userId);
   }
@@ -398,6 +460,7 @@ class AuthProvider extends ChangeNotifier {
     _isGuest = false;
     _userId = '';
     _userName = '';
+    _username = '';
     _userEmail = '';
     notifyListeners();
 
@@ -457,6 +520,7 @@ class AuthProvider extends ChangeNotifier {
     await prefs.setBool('is_logged_in', false);
     await prefs.setBool('is_guest', false);
     await prefs.remove('user_name');
+    await prefs.remove('user_username');
     await prefs.remove('user_email');
     await prefs.remove('user_id');
     await prefs.remove('sb_access_token');

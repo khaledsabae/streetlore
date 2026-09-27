@@ -408,6 +408,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emg_title => 'Emergency';
 
   @override
+  String get admin_title => 'Admin Panel';
+
+  @override
+  String get admin_forbidden => 'Admin only';
+
+  @override
+  String get admin_forbidden_sub =>
+      'Your account is not authorised to add places.';
+
+  @override
+  String get admin_add_new => 'Add new place';
+
+  @override
+  String get admin_view_list => 'View places list';
+
+  @override
+  String get admin_field_name => 'Name';
+
+  @override
+  String get admin_field_category => 'Category';
+
+  @override
+  String get admin_field_address => 'Address';
+
+  @override
+  String get admin_field_description => 'Description';
+
+  @override
+  String get admin_field_image => 'Image';
+
+  @override
+  String get admin_field_hours => 'Open hours';
+
+  @override
+  String get admin_field_rating => 'Rating';
+
+  @override
+  String get admin_err_name => 'Name is required';
+
+  @override
+  String get admin_err_category =>
+      'Category is required (e.g. ATM, Hotel, Cafe)';
+
+  @override
+  String get admin_err_address => 'Address is required';
+
+  @override
+  String get admin_submit => 'Add to map';
+
+  @override
+  String get admin_added => 'Added';
+
+  @override
+  String get admin_failed => 'Failed';
+
+  @override
   String get emg_transport => 'Transport';
 
   @override
@@ -696,6 +752,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get login_have_account => 'Already have an account?';
+
+  @override
+  String get login_username => 'Username';
+
+  @override
+  String get login_username_hint => '3-20 chars: letters, digits, . _ -';
+
+  @override
+  String get login_err_username_empty => 'Please enter a username';
+
+  @override
+  String get login_err_username_length => 'Username must be 3-20 characters';
+
+  @override
+  String get login_err_username_chars =>
+      'Only letters, digits, dot, underscore and dash';
+
+  @override
+  String get username_invalid =>
+      'Invalid username (3-20 chars, letters/digits/._-)';
 
   @override
   String get login_no_account => 'No account yet?';

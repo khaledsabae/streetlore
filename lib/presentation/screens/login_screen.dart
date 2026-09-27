@@ -23,9 +23,11 @@ class _LoginScreenState extends State<LoginScreen>
     with TickerProviderStateMixin {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
+  final _usernameCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
+  final _usernameFocus = FocusNode();
   bool _isLoading = false;
   bool _isSignUp = false;
   bool _obscurePassword = true;
@@ -59,14 +61,21 @@ class _LoginScreenState extends State<LoginScreen>
         () => _focusedField = _passwordFocus.hasFocus ? 'password' : null,
       ),
     );
+    _usernameFocus.addListener(
+      () => setState(
+        () => _focusedField = _usernameFocus.hasFocus ? 'username' : null,
+      ),
+    );
   }
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _usernameCtrl.dispose();
     _emailFocus.dispose();
     _passwordFocus.dispose();
+    _usernameFocus.dispose();
     _animCtrl.dispose();
     super.dispose();
   }
@@ -82,6 +91,7 @@ class _LoginScreenState extends State<LoginScreen>
     final errorKey = await context.read<AuthProvider>().signIn(
       email: _emailCtrl.text,
       password: _passwordCtrl.text,
+      username: _usernameCtrl.text,
       isSignUp: _isSignUp,
     );
 
@@ -249,6 +259,41 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                           const SizedBox(height: 16),
+                          // v1.0.41: explicit Username field on sign-up.
+                          // Sign-in keeps the original Email + Password
+                          // only (username comes back via Supabase
+                          // user_metadata on the next sign-in).
+                          if (_isSignUp) ...[
+                            FadeInUp(
+                              delay: const Duration(milliseconds: 420),
+                              child: _InputField(
+                                controller: _usernameCtrl,
+                                focusNode: _usernameFocus,
+                                isFocused: _focusedField == 'username',
+                                label: context.tr('login_username'),
+                                hint: context.tr('login_username_hint'),
+                                icon: Icons.alternate_email_rounded,
+                                keyboardType: TextInputType.text,
+                                textInputAction: TextInputAction.next,
+                                autocorrect: false,
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return context.tr('login_err_username_empty');
+                                  }
+                                  final u = v.trim();
+                                  if (u.length < 3 || u.length > 20) {
+                                    return context.tr('login_err_username_length');
+                                  }
+                                  if (!RegExp(r'^[A-Za-z0-9._-]+$')
+                                      .hasMatch(u)) {
+                                    return context.tr('login_err_username_chars');
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
                           FadeInUp(
                             delay: const Duration(milliseconds: 480),
                             child: _InputField(
@@ -548,7 +593,9 @@ class _InputField extends StatelessWidget {
   final String hint;
   final IconData icon;
   final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
   final bool obscureText;
+  final bool autocorrect;
   final Widget? suffixIcon;
   final String? Function(String?)? validator;
 
@@ -560,7 +607,9 @@ class _InputField extends StatelessWidget {
     required this.hint,
     required this.icon,
     this.keyboardType,
+    this.textInputAction,
     this.obscureText = false,
+    this.autocorrect = true,
     this.suffixIcon,
     this.validator,
   });
@@ -586,6 +635,8 @@ class _InputField extends StatelessWidget {
         controller: controller,
         focusNode: focusNode,
         keyboardType: keyboardType,
+        textInputAction: textInputAction,
+        autocorrect: autocorrect,
         obscureText: obscureText,
         style: TextStyle(
           color: context.textPri,
