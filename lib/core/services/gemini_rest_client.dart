@@ -30,32 +30,33 @@ class GeminiRestClient {
 
   static const Duration _timeout = Duration(seconds: 45);
 
-  /// v1.0.37 model fallback chain. Tried in order for EVERY key in
-  /// the rotation; a 404 NOT_FOUND on one model name silently moves
-  /// to the next name (same key, different model). The SDK still
-  /// uses the official `x-goog-api-key` header auth + 5-key rotation
-  /// on 401/403/429/5xx/timeouts; this list just adds a per-key
-  /// model failover on top of that.
+  /// v1.0.40 model fallback chain. The user confirmed that the
+  /// v1.0.37 chain (`1.5-flash-002`, `1.5-flash-001`, `1.5-flash`)
+  /// was returning `(Error: 404)` for their live keys. The
+  /// `-002` and `-001` versioned snapshots were retired by
+  /// Google at some point and removed from the v1beta endpoint,
+  /// so the official SDK call returned 404 before we even got to
+  /// `1.5-flash`. v1.0.40 drops those two versioned aliases and
+  /// uses the **currently documented** stable identifiers from
+  /// https://ai.google.dev/gemini-api/docs/models:
   ///
-  /// v1.0.38: dropped `gemini-1.0-pro` from the chain. The user
-  /// confirmed the live v1.0.37 build surfaced
-  ///   `models/gemini-1.0-pro is not found for API version v1beta,
-  ///    or is not supported for generateContent`
-  /// into the chat bubble - the 1.0 line is not available on the
-  /// v1beta endpoint. We now stick to the 1.5 family only:
-  /// 1.5-flash-002 -> 1.5-flash-001 -> 1.5-flash. If all three
-  /// still 404 / time out, the outer try-catch below returns a
-  /// conversational "Sorry, I am currently unavailable." via the
-  /// GeminiResult.text field with statusCode = 599 so the AI
-  /// Tour Guide renders it directly in the chat bubble instead
-  /// of the raw API crash log.
+  ///   1. `gemini-2.0-flash`         - current 2.0 stable Flash
+  ///   2. `gemini-1.5-flash-latest`  - 1.5 pointer (always resolves
+  ///                                    to the latest 1.5-Flash build)
+  ///   3. `gemini-1.5-flash`         - bare 1.5 alias (still works
+  ///                                    on v1beta at time of writing)
+  ///
+  /// Tried in order for EVERY key in the 5-key rotation; a 404
+  /// NOT_FOUND on one model name silently moves to the next name
+  /// with the same key (we do NOT burn the key on a model 404 -
+  /// it's a model problem, not a key problem).
   ///
   /// The `model` argument from callers is prepended (deduped) so
   /// future callers can opt into a new model without changing this
   /// file.
   static const List<String> _modelFallbackOrder = [
-    'gemini-1.5-flash-002',
-    'gemini-1.5-flash-001',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash-latest',
     'gemini-1.5-flash',
   ];
 

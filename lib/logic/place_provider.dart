@@ -47,8 +47,20 @@ class PlaceProvider extends ChangeNotifier {
   Future<void> _loadLifetimeCheckin() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _lifetimeCheckinCount = prefs.getInt(_kLifetimeCheckinKey) ?? 0;
-      notifyListeners();
+      final loaded = prefs.getInt(_kLifetimeCheckinKey) ?? 0;
+      // v1.0.40: race fix. The constructor is sync, this load is
+      // async - if the user checks in before this load finishes,
+      // bumpLocalCheckinCount has already raised
+      // _lifetimeCheckinCount and persisted the new value. We use
+      // MAX so we don't clobber that with a stale read. We only
+      // notifyListeners when we actually raise the value (i.e. the
+      // persisted value from a previous session is greater than
+      // what was live in memory) so we don't fire an extra rebuild
+      // for the in-session case where bump already raised it.
+      if (loaded > _lifetimeCheckinCount) {
+        _lifetimeCheckinCount = loaded;
+        notifyListeners();
+      }
     } catch (e) {
       debugPrint('PlaceProvider._loadLifetimeCheckin: $e');
     }
@@ -194,7 +206,19 @@ class PlaceProvider extends ChangeNotifier {
       final list = (res as List<dynamic>)
           .map((e) => _placeFromSupabase(e as Map<String, dynamic>))
           .toList();
-      if (list.isEmpty) {
+      // v1.0.40: drop rows with bad coords before merging with
+      // the offline cache or rendering. The filter is also applied
+      // per-row inside _placeFromSupabase for logging, but this
+      // pass removes them from the surfaced list.
+      final filtered = _filterInvalidCoords(list);
+      if (filtered.length != list.length) {
+        debugPrint(
+          'PlaceProvider.loadPlaces: filtered '
+          '${list.length - filtered.length}/${list.length} rows '
+          'with invalid coords',
+        );
+      }
+      if (filtered.isEmpty) {
         // Supabase answered but empty (rate-limited / no rows). Keep
         // the Hive seed if we already had one, otherwise fall back.
         _places = _places.isNotEmpty
@@ -204,7 +228,7 @@ class PlaceProvider extends ChangeNotifier {
                 : List<PlaceModel>.from(fallbackPlaces));
         _error = null;
       } else {
-        _places = list;
+        _places = filtered;
         _error = null;
       }
     } catch (e) {
@@ -276,8 +300,49 @@ class PlaceProvider extends ChangeNotifier {
     );
   }
 
-  PlaceModel _placeFromSupabase(Map<String, dynamic> json) =>
-      placeModelFromSupabaseRow(json);
+  PlaceModel _placeFromSupabase(Map<String, dynamic> json) {
+    final model = placeModelFromSupabaseRow(json);
+    // v1.0.40: filter out rows with obviously-bad coords
+    // (0,0 sentinel, or lat/lng outside Alexandria's bounding
+    // box). Such rows previously landed on the map at the
+    // equator off the coast of Africa, which is what the user
+    // reported as "80% of the place locations on the map are
+    // inaccurate". The seed-hotels / mock-data fallback below
+    // (mergeSeedHotels / OfflineProvider.cachedFallback) keep
+    // their hand-tuned coords and are NOT filtered here because
+    // they bypass the Supabase row path entirely.
+    if (!_hasValidCoords(model.lat, model.lng)) {
+      debugPrint(
+        'PlaceProvider._placeFromSupabase: filtered place '
+        'id=${model.id} name="${model.name}" with bad '
+        'coords lat=${model.lat} lng=${model.lng}',
+      );
+    }
+    return model;
+  }
+
+  /// v1.0.40: strict bounding box check for Supabase-supplied
+  /// coordinates. Alexandria's lat/lng range (with a generous
+  /// 0.5deg buffer so we don't drop borderline suburbs):
+  ///   lat in [29.5, 31.5]
+  ///   lng in [29.0, 30.5]
+  /// Plus a (0, 0) sentinel that some bad imports produced.
+  bool _hasValidCoords(double lat, double lng) {
+    if (lat == 0.0 && lng == 0.0) return false;
+    if (lat < 29.5 || lat > 31.5) return false;
+    if (lng < 29.0 || lng > 30.5) return false;
+    return true;
+  }
+
+  /// v1.0.40: drop invalid-coordinate rows from the loaded list
+  /// AFTER decoding but BEFORE exposing the list. This means the
+  /// home / map screens never see a row that would render off
+  /// the map.
+  List<PlaceModel> _filterInvalidCoords(List<PlaceModel> input) {
+    return input
+        .where((p) => _hasValidCoords(p.lat, p.lng))
+        .toList(growable: false);
+  }
 
   Future<void> _loadSavedPlaces() async {
     final prefs = await SharedPreferences.getInstance();
