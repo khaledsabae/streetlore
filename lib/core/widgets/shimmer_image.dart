@@ -3,8 +3,8 @@ import 'package:shimmer/shimmer.dart';
 
 import 'robust_image.dart';
 
-/// Backwards-compatible wrapper that uses [RobustImage] (which sets
-/// User-Agent and bypasses CachedNetworkImage's broken cache on Android).
+
+
 class ShimmerImage extends StatelessWidget {
   final String imageUrl;
   final BoxFit fit;

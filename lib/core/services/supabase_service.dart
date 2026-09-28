@@ -56,8 +56,8 @@ class SupabaseService {
   Future<void> postMessage(ChatMessage message) async {
     if (_client == null) return;
     try {
-      // .select() forces a return so RLS denials throw instead of being
-      // silently swallowed.
+      
+      
       await _client!.from('place_chat').insert(message.toJson()).select();
     } catch (e) {
       _logError('postMessage', e);
@@ -103,17 +103,17 @@ class SupabaseService {
   Future<void> pushStats(GamificationStats stats) async {
     if (_client == null) return;
     try {
-      // .select() ensures the upsert actually succeeded; an RLS denial
-      // will throw a PostgrestException instead of returning silently.
+      
+      
       await _client!.from('leaderboard').upsert(stats.toJson()).select();
     } catch (e) {
       _logError('pushStats', e);
     }
   }
 
-  /// Pull the stats row for [userId] from the leaderboard table. Returns
-  /// `null` when the user has no row yet or when Supabase is unavailable
-  /// (the caller decides whether to fall back to local cached stats).
+  
+  
+  
   Future<GamificationStats?> pullStats(String userId) async {
     if (_client == null) return null;
     try {
@@ -132,11 +132,11 @@ class SupabaseService {
     }
   }
 
-  /// Push (upsert) a single saved place for [userId] to the `saved_places`
-  /// table. The whole `PlaceModel` is JSON-encoded into the `place_data`
-  /// JSONB column alongside `user_id` and `saved_at`. This is what makes
-  /// the user's saved list survive a logout / app reinstall / device
-  /// switch — SharedPreferences alone is not enough.
+  
+  
+  
+  
+  
   Future<bool> pushSavedPlace(String userId, PlaceModel place) async {
     if (_client == null || userId.isEmpty) return false;
     try {
@@ -153,7 +153,7 @@ class SupabaseService {
     }
   }
 
-  /// Delete a saved place for [userId].
+  
   Future<bool> deleteSavedPlace(String userId, String placeId) async {
     if (_client == null || userId.isEmpty) return false;
     try {
@@ -169,16 +169,16 @@ class SupabaseService {
     }
   }
 
-  /// Record a check-in event for [userId] at [placeId]. Also increments
-  /// `places_visited` on the user row so the counter is always live.
-  ///
-  /// v1.0.35: returns `({bool ok, PostgrestException? error})` so the
-  /// caller can surface the EXACT server message (e.g. an RLS policy
-  /// "new row violates row-level security policy" or a schema mismatch
-  /// "column \"xyz\" does not exist") to the user. Previously this
-  /// returned a bare `bool` and the screen had no way to distinguish
-  /// "RLS denied" from "table missing" from "no network" - the user
-  /// saw the same red SnackBar for all three and couldn't debug.
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   Future<({bool ok, PostgrestException? error})> registerCheckin(
     String userId,
     String placeId,
@@ -187,10 +187,10 @@ class SupabaseService {
       return (ok: false, error: null);
     }
     try {
-      // .select() surfaces RLS denials as a PostgrestException. Only
-      // the two documented columns (`user_id`, `place_id`) plus the
-      // timestamp are sent - no extra / typo'd keys so we cannot trip
-      // a "column does not exist" error from Supabase.
+      
+      
+      
+      
       await _client!.from('place_checkins').insert({
         'user_id': userId,
         'place_id': placeId,
@@ -202,8 +202,8 @@ class SupabaseService {
       return (ok: false, error: e);
     } catch (e) {
       _logError('registerCheckin($userId, $placeId)', e);
-      // Wrap unknown errors into a synthetic PostgrestException-like
-      // message so the caller has a single `error` field to display.
+      
+      
       return (
         ok: false,
         error: PostgrestException(
@@ -216,10 +216,10 @@ class SupabaseService {
     }
   }
 
-  /// Count the user's saved places + check-ins directly from the DB.
-  /// Used by the Profile screen to show real numbers (not 0) on cold
-  /// start. Returns zeroed counts on any failure so the caller can
-  /// still render.
+  
+  
+  
+  
   Future<({int savedPlaces, int checkIns})> countUserRows(
     String userId,
   ) async {
@@ -251,9 +251,9 @@ class SupabaseService {
     return (savedPlaces: saved, checkIns: checkins);
   }
 
-  /// Pull every saved place belonging to [userId] from the `saved_places`
-  /// table. The shape mirrors `PlaceModel.toJson` so we can rebuild the
-  /// `PlaceModel` straight from the response.
+  
+  
+  
   Future<List<PlaceModel>> pullSavedPlaces(String userId) async {
     if (_client == null) return const [];
     try {
@@ -290,7 +290,7 @@ class SupabaseService {
     }
   }
 
-  /// Pull all tours the user saved under their account.
+  
   Future<List<Map<String, dynamic>>> pullSavedTours(String userId) async {
     if (_client == null) return const [];
     try {
@@ -321,8 +321,8 @@ class SupabaseService {
     }
   }
 
-  /// Centralized error logger. Surfaces PostgrestException code and
-  /// message so RLS denials are clearly visible in debug output.
+  
+  
   void _logError(String method, Object e) {
     if (e is PostgrestException) {
       debugPrint(

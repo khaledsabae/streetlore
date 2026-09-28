@@ -21,9 +21,9 @@ class _WalkingRoutesScreenState extends State<WalkingRoutesScreen> {
   static const _alexCenter = LatLng(31.2001, 29.9187);
   final MapController _mapController = MapController();
 
-  /// Road-snapped polyline (filled in by OSRM). Empty = use straight fallback.
+  
   List<LatLng> _routePoints = const [];
-  /// Inline metric summary returned with the route.
+  
   RouteMetrics? _routeMetrics;
   bool _routeLoading = false;
 
@@ -33,8 +33,8 @@ class _WalkingRoutesScreenState extends State<WalkingRoutesScreen> {
     super.dispose();
   }
 
-  /// Recompute the road-snapped route whenever the user changes the
-  /// selection.
+  
+  
   Future<void> _refreshRoute() async {
     if (_selected.length < 2) {
       setState(() {

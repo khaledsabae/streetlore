@@ -956,6 +956,30 @@ abstract class AppLocalizations {
   /// **'Failed'**
   String get admin_failed;
 
+  /// Translation key: admin_location_search
+  ///
+  /// In en, this message translates to:
+  /// **'Location search (Nominatim / OpenStreetMap)'**
+  String get admin_location_search;
+
+  /// Translation key: admin_location_search_hint
+  ///
+  /// In en, this message translates to:
+  /// **'Type a place name or address (e.g. \"Bibliotheca Alexandrina\")'**
+  String get admin_location_search_hint;
+
+  /// Translation key: admin_location_no_results
+  ///
+  /// In en, this message translates to:
+  /// **'No results. Try a more specific query.'**
+  String get admin_location_no_results;
+
+  /// Translation key: admin_err_location
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a location from the search results first.'**
+  String get admin_err_location;
+
   /// Translation key: emg_transport
   ///
   /// In en, this message translates to:

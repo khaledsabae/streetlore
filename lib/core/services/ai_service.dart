@@ -10,20 +10,20 @@ class AiService {
   AiService._();
   static final AiService instance = AiService._();
 
-  /// True when the configured key looks obviously invalid (placeholder /
-  /// example). We only ATTEMPT the call when this is false; when true we
-  /// skip the network round-trip so we don't burn quota or surface 401s.
-  ///
-  /// Accepts the project-specific `AQ.Ab...` token format the user
-  /// provided, in addition to standard Google AI Studio `AIzaSy...` keys.
+  
+  
+  
+  
+  
+  
   bool _looksLikeRealKey(String key) {
     if (key.isEmpty) return false;
     if (key.contains('YOUR_') || key.contains('REPLACE')) return false;
-    // Standard Google AI Studio key.
+    
     if (key.startsWith('AIza') && key.length >= 30) return true;
-    // Project-specific AQ.* token format.
+    
     if (key.startsWith('AQ.') && key.length >= 30) return true;
-    // Generous fallback for Vertex-style or other accepted keys.
+    
     if (key.length < 20) return false;
     if (RegExp(r'^[A-Za-z0-9_\-]+$').hasMatch(key) ||
         key.contains('.') ||
@@ -37,9 +37,9 @@ class AiService {
     return text.runes.any((r) => r >= 0x0600 && r <= 0x06FF);
   }
 
-  /// Reference knowledge the AI should ground every plan in. Keep this
-  /// short — these are the high-signal Alexandria facts users actually
-  /// care about. The model can elaborate; these are anchors.
+  
+  
+  
   static const String _alexandriaKnowledge = '''
 ALEXANDRIA — ANCHOR FACTS (always ground answers here):
 - Founded 331 BC by Alexander the Great. Ptolemaic capital. Once the

@@ -20,7 +20,7 @@ class ItineraryModel {
     required this.places,
   });
 
-  /// Returns title in the current locale (falls back to English).
+  
   String localizedTitle(String locale) {
     if (locale == 'ar' && titleAr != null && titleAr!.isNotEmpty) {
       return titleAr!;
@@ -28,7 +28,7 @@ class ItineraryModel {
     return title;
   }
 
-  /// Returns description in the current locale (falls back to English).
+  
   String localizedDescription(String locale) {
     if (locale == 'ar' && descriptionAr != null && descriptionAr!.isNotEmpty) {
       return descriptionAr!;

@@ -20,20 +20,20 @@ class AITourGuideService {
   AITourGuideService._();
   static final AITourGuideService instance = AITourGuideService._();
 
-  /// Same heuristic as AiService: only ATTEMPT the call when the key looks
-  /// real. When the key is obviously invalid, skip the network round-trip
-  /// and use the local offline answer.
-  ///
-  /// Accepts the project-specific `AQ.Ab...` token format the user
-  /// provided, in addition to standard Google AI Studio `AIzaSy...` keys.
+  
+  
+  
+  
+  
+  
   bool _looksLikeRealKey(String key) {
     if (key.isEmpty) return false;
     if (key.contains('YOUR_') || key.contains('REPLACE')) return false;
-    // Standard Google AI Studio key.
+    
     if (key.startsWith('AIza') && key.length >= 30) return true;
-    // Project-specific AQ.* token format.
+    
     if (key.startsWith('AQ.') && key.length >= 30) return true;
-    // Vertex-style or other accepted prefix.
+    
     if (key.length < 20) return false;
     if (RegExp(r'^[A-Za-z0-9_\-]+$').hasMatch(key) ||
         key.contains('.') ||
@@ -51,7 +51,7 @@ class AITourGuideService {
   bool _busy = false;
   bool get isBusy => _busy;
 
-  // ignore_for_file: unnecessary_brace_in_string_interps
+  
   String _buildSystemPrompt(PlaceModel place) {
     final now = DateTime.now();
     final hour = now.hour;
@@ -146,9 +146,9 @@ safety, and accessibility.''';
       );
       return;
     }
-    // Send each user message as an independent REST call via the
-    // shared Gemini REST client which rotates through [apiKeys]. This
-    // sidesteps any SDK-level token / header formatting issues.
+    
+    
+    
     _session = _LiveSession(
       apiKeys: keys,
       model: AppConfig.geminiModel,
@@ -215,10 +215,10 @@ safety, and accessibility.''';
   String _summarizeError(Object e) {
     if (e is GeminiApiException) {
       var code = e.statusCode;
-      // v1.0.44: statusCode 599 is the "all keys × all models failed"
-      // sentinel. The GeminiRestClient puts the real last HTTP status
-      // inside `message` as a "(Error: NNN)" suffix. Parse it out so
-      // the user sees the actual cause, not the sentinel.
+      
+      
+      
+      
       if (code == 599) {
         final m = RegExp(r'\(Error:\s*(\d{3})\)').firstMatch(e.message);
         if (m != null) {
@@ -262,9 +262,9 @@ safety, and accessibility.''';
         : firstLine;
   }
 
-  /// Wrap the raw user text with fresh context (current time, day,
-  /// placeholder for weather) so every reply reflects the actual moment
-  /// the user is asking about.
+  
+  
+  
   String _buildContextualUserPrompt(String userText) {
     final now = DateTime.now();
     return '''
@@ -447,14 +447,14 @@ $userText''';
     _session = null;
   }
 
-  /// Single-shot "general" Alexandria expert call. Used by the
-  /// General AI Tour Guide screen on the Home page for free-form
-  /// questions that are NOT tied to a specific place.
-  ///
-  /// The system prompt is the only thing the model sees, so we keep it
-  /// tight to save tokens and stay on-topic: ONLY Alexandria tourism,
-  /// no coding / math / general chat. Polite decline for everything
-  /// else.
+  
+  
+  
+  
+  
+  
+  
+  
   static Future<String> askAlexandria(String userText) async {
     final system = '''You are the street-level Alexandria tourism expert inside the "Streetlore" app. You answer questions about travel, places, food, history, and culture in Alexandria, Egypt.
 
@@ -489,10 +489,10 @@ STRICT RULES:
         message: 'AI not configured',
       );
     }
-    // v1.0.38: when ALL keys × ALL models failed the Gemini client
-    // returns a friendly fallback text in `result.text` and the
-    // sentinel statusCode 599. We surface that directly into the
-    // chat bubble instead of throwing the raw API crash log.
+    
+    
+    
+    
     if (result.statusCode == 599) {
       return result.text ??
           "Sorry, I am currently unavailable. Please try again in a moment.";
@@ -509,10 +509,10 @@ STRICT RULES:
   }
 }
 
-/// Lightweight session wrapper that forwards every `sendMessage` call to
-/// the Gemini REST endpoint with `?key=API_KEY` in the URL — the format
-/// the Gemini Developer API documents for API-key auth. Replaces the
-/// google_generative_ai SDK call so we control the auth header path.
+
+
+
+
 class _LiveSession {
   _LiveSession({
     required this.apiKeys,
@@ -539,13 +539,13 @@ class _LiveSession {
         message: 'AI not configured (no api keys)',
       );
     }
-    // v1.0.44: do NOT silently swallow the 599 "all keys × all models failed"
-    // sentinel. The user explicitly asked to see the actual error in the
-    // chat bubble when the API fails. We extract the underlying HTTP
-    // status (e.g. the 401 / 403 / 429 / 404 of the LAST attempt) from
-    // `errorBody` so the catch handler can render it as `⚠️ Gemini API:
-    // (HTTP 404) ...`. If `errorBody` already has structured info we
-    // preserve it verbatim.
+    
+    
+    
+    
+    
+    
+    
     if (!result.isOk) {
       throw GeminiApiException(
         statusCode: result.statusCode,

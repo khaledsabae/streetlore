@@ -46,18 +46,18 @@ class MapViewScreen extends StatefulWidget {
 
 class _MapViewScreenState extends State<MapViewScreen> {
   final MapController _mapController = MapController();
-  /// `null`  → All filter is ON, show every place.
-  /// `'__none__'` sentinel → user explicitly toggled All OFF — the map
-  ///   renders zero pins no matter what places are loaded.
-  /// any other string → filter to that category.
+  
+  
+  
+  
   String? _selectedCategory;
   PlaceModel? _selectedPlace;
   LatLng? _userLocation;
   bool _initialCentered = false;
-  // ATM markers are opt-in - never rendered until the user toggles
-  // the ATM filter on (UI clutter avoidance, per design).
+  
+  
   bool _showAtms = false;
-  // Filter chips for the new opt-in layers. Hotels is also opt-in.
+  
   final Set<String> _extraLayers = <String>{};
 
   static const _alexCenter = LatLng(31.2001, 29.9187);
@@ -89,7 +89,7 @@ class _MapViewScreenState extends State<MapViewScreen> {
     } catch (_) {}
   }
 
-  /// Open the ATM info bottom sheet for a tapped ATM marer.
+  
   void _showAtmSheet(BuildContext context, MapPoi atm) {
     showModalBottomSheet<void>(
       context: context,
@@ -119,8 +119,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
       case 'Churches':
         return Icons.church_rounded;
       case 'Hotels':
-        // Hotel/Bed icon to clearly differentiate hotels from generic
-        // historical pins, per design spec.
+        
+        
         return Icons.bed_rounded;
       default:
         return Icons.location_on_rounded;
@@ -144,19 +144,19 @@ class _MapViewScreenState extends State<MapViewScreen> {
       case 'Churches':
         return const Color(0xFFF97316);
       case 'Hotels':
-        return const Color(0xFF6A1B9A); // purple, same as the opt-in chip
+        return const Color(0xFF6A1B9A); 
       default:
         return AppColors.primary;
     }
   }
 
-  /// Filter helper.
-  /// - `null` → All ON → return every place.
-  /// - `'__none__'` → All OFF (user-toggled) → return empty list.
-  /// - any other → filter by category.
+  
+  
+  
+  
   List<PlaceModel> _filtered(List<PlaceModel> all) {
-    // v1.0.31: exclusive extra-layer modes first so the map shows
-    // ONLY the chosen layer's markers (no stale main places).
+    
+    
     if (_showAtms) return const <PlaceModel>[];
     if (_showHotels) {
       return all.where((p) => p.category == 'Hotels').toList();
@@ -290,12 +290,12 @@ class _MapViewScreenState extends State<MapViewScreen> {
                         width: 44,
                         height: 44,
                         child: GestureDetector(
-                          // v1.0.33: find the matching PlaceModel in the
-                          // merged places list (DB hotels + seed hotels
-                          // merged by PlaceProvider.mergeSeedHotels) and
-                          // select it so the _SelectedPlaceCard pops up
-                          // with the hotel's details (name, rating,
-                          // address, "Go" button).
+                          
+                          
+                          
+                          
+                          
+                          
                           onTap: () {
                             final match = places.firstWhere(
                               (p) => p.id == hotel.id,
@@ -443,24 +443,24 @@ class _MapViewScreenState extends State<MapViewScreen> {
                 setState(() {
                   if (_extraLayers.contains(layer)) {
                     _extraLayers.remove(layer);
-                    // When the user turns Hotels OFF, drop the
-                    // forced category filter so the main places
-                    // become visible again.
+                    
+                    
+                    
                     if (layer == _hotelsCategory &&
                         _selectedCategory == _hotelsCategory) {
                       _selectedCategory = null;
                     }
                   } else {
                     _extraLayers.add(layer);
-                    // v1.0.27 fix: do NOT force _selectedCategory to
-                    // 'Hotels' on toggle. Doing so silently hid every
-                    // other category from the map and produced the
-                    // "0 places / white map" symptom when the user
-                    // tapped the Hotels chip. The hotel markers are
-                    // rendered from getSeedHotels() below and from
-                    // the DB places with category='Hotels' that
-                    // PlaceProvider.mergeSeedHotels() seeds - both
-                    // are independent of _selectedCategory now.
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
                   }
                 });
               },
@@ -586,7 +586,7 @@ class _CategoryFilter extends StatelessWidget {
   final ValueChanged<String?> onSelect;
   final Color Function(String) colorOf;
   final IconData Function(String) iconOf;
-  // Opt-in layers (off by default).
+  
   final Set<String> extraLayers;
   final Set<String> activeLayers;
   final ValueChanged<String> onToggleExtraLayer;
@@ -607,7 +607,7 @@ class _CategoryFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Order matters: categories first, then opt-in layers (Hotels, ATMs).
+    
     const cats = [
       'All',
       'Historical',
@@ -621,9 +621,9 @@ class _CategoryFilter extends StatelessWidget {
 
     for (final cat in cats) {
       final isAll = cat == 'All';
-      // All chip is selected only when there is no filter at all — not
-      // when the sentinel has been set (which means All was toggled OFF
-      // and the map is intentionally empty).
+      
+      
+      
       final allOn = selected == null;
       final isSel = isAll ? allOn : cat == selected;
       final color = isAll ? AppColors.primary : colorOf(cat);
@@ -634,15 +634,15 @@ class _CategoryFilter extends StatelessWidget {
             selected: isSel,
             onSelected: (_) {
               if (isAll) {
-                // Tap All when All is currently ON → drop to the
-                // `__none__` sentinel so the map renders zero pins.
-                // Tap All when All is OFF (either via the sentinel or
-                // because a category is active) → restore All ON.
+                
+                
+                
+                
                 final currentlyAll = selected == null;
                 onSelect(currentlyAll ? '__none__' : null);
               } else {
-                // Tap a category chip: if it's the active one, drop
-                // back to All OFF (empty map); otherwise activate it.
+                
+                
                 if (cat == selected) {
                   onSelect('__none__');
                 } else {
@@ -679,7 +679,7 @@ class _CategoryFilter extends StatelessWidget {
       );
     }
 
-    // Optional layers separator
+    
     children.add(
       Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -688,7 +688,7 @@ class _CategoryFilter extends StatelessWidget {
       ),
     );
 
-    // "Hotels" extra-layer chip
+    
     const hotelsey = 'Hotels';
     final isHotels = activeLayers.contains(hotelsey);
     children.add(
@@ -727,7 +727,7 @@ class _CategoryFilter extends StatelessWidget {
       ),
     );
 
-    // "ATMs" extra-layer chip (always opt-in)
+    
     children.add(
       Padding(
         padding: const EdgeInsets.only(right: 8),

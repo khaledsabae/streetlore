@@ -3,9 +3,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../data/models/map_poi.dart';
 
-/// Bottom sheet that opens when a user taps an ATM marker on the
-/// map. Shows the bank brand, branch name and address, and a
-/// prominent `Get Directions` button that hands off to Google Maps.
+
+
+
 class AtmSheet extends StatelessWidget {
   final MapPoi atm;
   const AtmSheet({super.key, required this.atm});

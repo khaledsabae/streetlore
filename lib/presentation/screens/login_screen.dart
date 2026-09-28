@@ -125,8 +125,8 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  // Guest login removed in v1.0.20. Google sign-in is the only
-  // supported entry point.
+  
+  
 
   void _goToMain() {
     Navigator.of(context).pushAndRemoveUntil(
@@ -177,9 +177,9 @@ class _LoginScreenState extends State<LoginScreen>
                       child: PopIn(
                         duration: const Duration(milliseconds: 700),
                         child: Container(
-                          // v1.0.31: reduced from 260x260 -> 200x200 so the
-                          // logo sits more elegantly on the login / splash
-                          // screens without dominating the form below it.
+                          
+                          
+                          
                           width: 200,
                           height: 200,
                           decoration: BoxDecoration(
@@ -259,10 +259,10 @@ class _LoginScreenState extends State<LoginScreen>
                             ),
                           ),
                           const SizedBox(height: 16),
-                          // v1.0.41: explicit Username field on sign-up.
-                          // Sign-in keeps the original Email + Password
-                          // only (username comes back via Supabase
-                          // user_metadata on the next sign-in).
+                          
+                          
+                          
+                          
                           if (_isSignUp) ...[
                             FadeInUp(
                               delay: const Duration(milliseconds: 420),

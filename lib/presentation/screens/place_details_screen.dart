@@ -59,20 +59,20 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _refreshNearby();
-      // v1.0.37: hydrate the green-check state from Supabase so the
-      // button stays green when the user returns to a place they
-      // already checked in at, instead of resetting to "Check in"
-      // and letting a tap fire a duplicate upsert.
+      
+      
+      
+      
       _loadCheckinState();
     });
   }
 
-  /// v1.0.37: query `place_checkins` for the signed-in user at this
-  /// place id. If any row matches, set `_isVisited = true` so the
-  /// "Check-in" quick action renders as the green check + "Visited"
-  /// label and a second tap is a no-op. Failures are logged but do
-  /// not throw - missing connectivity just means we fall back to the
-  /// local "not visited" state until the next refresh.
+  
+  
+  
+  
+  
+  
   Future<void> _loadCheckinState() async {
     if (!mounted) return;
     final userId =
@@ -94,8 +94,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
           'already checked in for user $userId - _isVisited=true',
         );
       } else if (!checked && _isVisited) {
-        // Defensive: if the local state is "visited" but the DB has
-        // no row (e.g. account switch), reset it.
+        
+        
         setState(() => _isVisited = false);
       }
     } catch (e) {
@@ -488,25 +488,25 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                       HapticFeedback.mediumImpact();
                                       final wasVisited = _isVisited;
                                       if (!wasVisited) {
-                                        // ========================================
-                                        // v1.0.36 RADICAL CHECK-IN.
-                                        //
-                                        // Bypass the complex
-                                        // GamificationProvider ->
-                                        // SupabaseService DB plumbing
-                                        // entirely. Do a direct, simple
-                                        // upsert via the Supabase client.
-                                        // The instant the call returns
-                                        // without throwing an exception,
-                                        // manually force the local UI to
-                                        // reflect the check-in (setState
-                                        // + PlaceProvider.bumpLocalCheckinCount
-                                        // -> notifyListeners). The user
-                                        // sees the badge turn green and
-                                        // the "Explored" counter on
-                                        // Profile increment on the same
-                                        // frame.
-                                        // ========================================
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
                                         final streak = context
                                             .read<StreakProvider>();
                                         final placeProvider = context
@@ -532,32 +532,32 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                           );
                                           return;
                                         }
-                                        // Bump the streak BEFORE the
-                                        // network call so the UI feels
-                                        // snappy on tap.
+                                        
+                                        
+                                        
                                         final newStreak = await streak
                                             .registerVisit();
                                         setState(
                                           () => _isVisited = true,
                                         );
                                         try {
-                                          // v1.0.37: direct upsert with
-                                          // `onConflict: 'user_id, place_id'`
-                                          // per the user spec, so a
-                                          // second tap on a place the
-                                          // user already checked in at
-                                          // is a graceful UPDATE (not a
-                                          // duplicate INSERT that
-                                          // surfaces a red
-                                          // `[23505] duplicate key
-                                          // value violates unique
-                                          // constraint` SnackBar).
-                                          // NOTE: this requires a
-                                          // unique constraint
-                                          // (user_id, place_id) on the
-                                          // `place_checkins` table -
-                                          // SQL included in the release
-                                          // notes.
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
                                           await Supabase.instance.client
                                               .from('place_checkins')
                                               .upsert({
@@ -565,15 +565,15 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                             'place_id': place.id,
                                           }, onConflict: 'user_id, place_id')
                                               .select();
-                                          // v1.0.43: removed
-                                          // `bumpLocalCheckinCount()`. The
-                                          // Profile Explored counter is
-                                          // now driven ONLY by the live
-                                          // Supabase count returned by
-                                          // `fetchRemoteCounts(userId)`,
-                                          // called right after every
-                                          // check-in / un-check-in.
-                                          // ignore: unawaited_futures
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
                                           placeProvider
                                               .fetchRemoteCounts(userId);
                                           if (!context.mounted) return;
@@ -607,11 +607,11 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                           );
                                           return;
                                         } on PostgrestException catch (e) {
-                                          // v1.0.35 behaviour preserved:
-                                          // show the EXACT server message
-                                          // in the red SnackBar so we
-                                          // know whether it's an RLS
-                                          // denial or a column mismatch.
+                                          
+                                          
+                                          
+                                          
+                                          
                                           if (!context.mounted) return;
                                           setState(
                                             () => _isVisited = false,
@@ -631,8 +631,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                           );
                                           return;
                                         } catch (e) {
-                                          // Non-Postgrest failure: same
-                                          // treatment, different prefix.
+                                          
+                                          
                                           if (!context.mounted) return;
                                           setState(
                                             () => _isVisited = false,
@@ -652,20 +652,20 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                           return;
                                         }
                                       } else {
-                                        // ========================================
-                                        // v1.0.38 UN-CHECK.
-                                        //
-                                        // The button is green
-                                        // (`_isVisited == true`). The
-                                        // user expects tapping it to
-                                        // (a) flip the badge back to a
-                                        // flag, (b) decrement the
-                                        // Profile "Explored" counter,
-                                        // and (c) actually DELETE the
-                                        // row from Supabase so the
-                                        // next time the screen opens
-                                        // it stays "Check-in".
-                                        // ========================================
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
+                                        
                                         final placeProvider = context
                                             .read<PlaceProvider>();
                                         final messenger = ScaffoldMessenger.of(
@@ -689,8 +689,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                           );
                                           return;
                                         }
-                                        // Flip UI immediately so the
-                                        // tap feels responsive.
+                                        
+                                        
                                         setState(
                                           () => _isVisited = false,
                                         );
@@ -700,12 +700,12 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                               .delete()
                                               .eq('user_id', userId)
                                               .eq('place_id', place.id);
-                                          // v1.0.43: removed
-                                          // `unbumpLocalCheckinCount()`.
-                                          // Refresh the Profile "Explored"
-                                          // counter straight from Supabase
-                                          // via `fetchRemoteCounts(userId)`.
-                                          // ignore: unawaited_futures
+                                          
+                                          
+                                          
+                                          
+                                          
+                                          
                                           placeProvider
                                               .fetchRemoteCounts(userId);
                                           if (!context.mounted) return;
@@ -735,9 +735,9 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                             ),
                                           );
                                         } on PostgrestException catch (e) {
-                                          // Roll the UI back so it
-                                          // stays in sync with the
-                                          // DB.
+                                          
+                                          
+                                          
                                           if (!context.mounted) return;
                                           setState(
                                             () => _isVisited = true,

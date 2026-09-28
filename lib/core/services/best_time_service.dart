@@ -7,8 +7,8 @@ class BestTimeRecommendation {
   final String hintKey;
   final IconData icon;
   final Color color;
-  /// Admin-supplied literal label. When non-null, the UI shows this
-  /// exact string instead of translating [labelKey].
+  
+  
   final String? customLabel;
 
   const BestTimeRecommendation({
@@ -32,9 +32,9 @@ class BestTimeService {
   BestTimeRecommendation recommend(PlaceModel place, {DateTime? now}) {
     final t = now ?? DateTime.now();
 
-    // Admin-supplied literal label (e.g. "Morning", "Sunset"). When set,
-    // we trust it as the canonical answer and skip the auto-computed
-    // scoring entirely.
+    
+    
+    
     final adminLabel = place.bestTimeToVisit?.trim();
     if (adminLabel != null && adminLabel.isNotEmpty) {
       return BestTimeRecommendation(
@@ -55,7 +55,7 @@ class BestTimeService {
     final category = place.category.toLowerCase();
 
     final slot = _slotFor(hour);
-    // Per-place override (when admin filled it) wins over category default.
+    
     final windows = place.bestTimeOverride != null
         ? _windowsFromOverride(place.bestTimeOverride!, category)
         : _windowsFor(category);
@@ -315,9 +315,9 @@ class BestTimeService {
     }
   }
 
-  /// Convert a per-place override map (slot -> score) into a full
-  /// `_Window` list, filling any missing slots from the category default
-  /// so we always return six ordered slots.
+  
+  
+  
   List<_Window> _windowsFromOverride(
     Map<String, int> override,
     String category,

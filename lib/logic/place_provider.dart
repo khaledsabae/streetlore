@@ -48,13 +48,13 @@ class PlaceProvider extends ChangeNotifier {
           .select()
           .eq('user_id', userId)
           .count(CountOption.exact);
-      // v1.0.43: the EXPLORED counter is now driven ONLY by the
-      // live Supabase row count. There is no SharedPreferences
-      // mirror, no monotonic lifetime counter, no "optimistic
-      // bump" that the DB has to reconcile later. Every
-      // `fetchRemoteCounts(userId)` is a fresh server-authoritative
-      // count, so the Profile screen and the post-check-in
-      // recompute always converge.
+      
+      
+      
+      
+      
+      
+      
       _remoteCheckinCount = checkinRes.count;
 
       debugPrint('Remote counts: saved=$_remoteSavedCount, checkins=$_remoteCheckinCount');
@@ -62,18 +62,19 @@ class PlaceProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('fetchRemoteCounts error: $e');
     }
+    
   }
 
-  /// v1.0.43: removed all optimistic-bump / lifetime caching.
-  /// After a check-in / un-check-in, the calling code MUST
-  /// `await placeProvider.fetchRemoteCounts(userId)` to refresh
-  /// the Profile / Explored digit from the actual server count.
-  /// There is no local "best guess" any more.
+  
+  
+  
+  
+  
 
-  /// Optimistic local increment of the remote saved-places counter. The
-  /// UI updates immediately so the Profile screen never flashes 0 while
-  /// the Supabase upsert is in flight. Reconciled by the next
-  /// `fetchRemoteCounts` (the save provider always fires one).
+  
+  
+  
+  
   void bumpLocalSavedCount() {
     _remoteSavedCount += 1;
     notifyListeners();
@@ -82,8 +83,8 @@ class PlaceProvider extends ChangeNotifier {
     );
   }
 
-  /// Optimistic local decrement of the remote saved-places counter
-  /// (mirror of [bumpLocalSavedCount] for unsave actions).
+  
+  
   void unbumpLocalSavedCount() {
     if (_remoteSavedCount > 0) _remoteSavedCount -= 1;
     notifyListeners();
@@ -95,9 +96,9 @@ class PlaceProvider extends ChangeNotifier {
   bool _isFilterOpenNow = false;
   bool _isFilterCheapest = false;
   bool _isFilterNearest = false;
-  /// Max price level the user wants to see (null = any).
+  
   PriceLevel? _maxPriceLevel;
-  /// Show only free places when true (overrides _maxPriceLevel).
+  
   bool _onlyFree = false;
 
   bool get isFilterOpenNow => _isFilterOpenNow;
@@ -110,9 +111,9 @@ class PlaceProvider extends ChangeNotifier {
     if (_loading) return;
     if (!force && _places.isNotEmpty) return;
 
-    // 0) Offline-first seed: if we have a Hive cache from a previous
-    //    download, hydrate `_places` immediately so the UI never has
-    //    to wait for a (potentially timing-out) Supabase round-trip.
+    
+    
+    
     final cachedSeed = OfflineProvider.cachedFallback;
     if (cachedSeed.isNotEmpty && _places.isEmpty) {
       _places = cachedSeed;
@@ -131,10 +132,10 @@ class PlaceProvider extends ChangeNotifier {
       final list = (res as List<dynamic>)
           .map((e) => _placeFromSupabase(e as Map<String, dynamic>))
           .toList();
-      // v1.0.40: drop rows with bad coords before merging with
-      // the offline cache or rendering. The filter is also applied
-      // per-row inside _placeFromSupabase for logging, but this
-      // pass removes them from the surfaced list.
+      
+      
+      
+      
       final filtered = _filterInvalidCoords(list);
       if (filtered.length != list.length) {
         debugPrint(
@@ -144,8 +145,8 @@ class PlaceProvider extends ChangeNotifier {
         );
       }
       if (filtered.isEmpty) {
-        // Supabase answered but empty (rate-limited / no rows). Keep
-        // the Hive seed if we already had one, otherwise fall back.
+        
+        
         _places = _places.isNotEmpty
             ? _places
             : (OfflineProvider.cachedFallback.isNotEmpty
@@ -164,11 +165,11 @@ class PlaceProvider extends ChangeNotifier {
       } else if (_places.isEmpty) {
         _places = List<PlaceModel>.from(fallbackPlaces);
       }
-      // else: keep the existing _places as-is (offline first seed wins)
+      
     } finally {
       _loading = false;
-      // Inject the seed hotels so they appear as full places in the
-      // Home list and Place Details flow.
+      
+      
       mergeSeedHotels();
       notifyListeners();
     }
@@ -186,8 +187,8 @@ class PlaceProvider extends ChangeNotifier {
     for (final p in _places) {
       if (p.id == id) return p;
     }
-    // Fallback to the offline Hive cache so a place page opened while
-    // offline can still render (the user explicitly downloaded that pack).
+    
+    
     final cached = OfflineProvider.cachedFallback;
     for (final p in cached) {
       if (p.id == id) return p;
@@ -195,14 +196,14 @@ class PlaceProvider extends ChangeNotifier {
     return null;
   }
 
-  /// True when the provider has any places loaded (either from Supabase
-  /// or the Hive fallback). The Offline Download UI uses this to avoid
-  /// running a download while the place list is still empty.
+  
+  
+  
   bool get hasPlaces => _places.isNotEmpty;
 
-  /// Static seed hotels are treated as real places (Places list,
-  /// save/check-in, Place Details) - merged into `_places` at load.
-  /// Use [mergeSeedHotels] after [loadPlaces] to register them.
+  
+  
+  
   void mergeSeedHotels() {
     if (_places.isEmpty) return;
     final hotelSeeds = getSeedHotelPlaces();
@@ -227,15 +228,15 @@ class PlaceProvider extends ChangeNotifier {
 
   PlaceModel _placeFromSupabase(Map<String, dynamic> json) {
     final model = placeModelFromSupabaseRow(json);
-    // v1.0.40: filter out rows with obviously-bad coords
-    // (0,0 sentinel, or lat/lng outside Alexandria's bounding
-    // box). Such rows previously landed on the map at the
-    // equator off the coast of Africa, which is what the user
-    // reported as "80% of the place locations on the map are
-    // inaccurate". The seed-hotels / mock-data fallback below
-    // (mergeSeedHotels / OfflineProvider.cachedFallback) keep
-    // their hand-tuned coords and are NOT filtered here because
-    // they bypass the Supabase row path entirely.
+    
+    
+    
+    
+    
+    
+    
+    
+    
     if (!_hasValidCoords(model.lat, model.lng)) {
       debugPrint(
         'PlaceProvider._placeFromSupabase: filtered place '
@@ -246,12 +247,12 @@ class PlaceProvider extends ChangeNotifier {
     return model;
   }
 
-  /// v1.0.40: strict bounding box check for Supabase-supplied
-  /// coordinates. Alexandria's lat/lng range (with a generous
-  /// 0.5deg buffer so we don't drop borderline suburbs):
-  ///   lat in [29.5, 31.5]
-  ///   lng in [29.0, 30.5]
-  /// Plus a (0, 0) sentinel that some bad imports produced.
+  
+  
+  
+  
+  
+  
   bool _hasValidCoords(double lat, double lng) {
     if (lat == 0.0 && lng == 0.0) return false;
     if (lat < 29.5 || lat > 31.5) return false;
@@ -259,10 +260,10 @@ class PlaceProvider extends ChangeNotifier {
     return true;
   }
 
-  /// v1.0.40: drop invalid-coordinate rows from the loaded list
-  /// AFTER decoding but BEFORE exposing the list. This means the
-  /// home / map screens never see a row that would render off
-  /// the map.
+  
+  
+  
+  
   List<PlaceModel> _filterInvalidCoords(List<PlaceModel> input) {
     return input
         .where((p) => _hasValidCoords(p.lat, p.lng))
@@ -278,19 +279,19 @@ class PlaceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Pull the user's saved places from Supabase and merge them into
-  /// the local cache. Returns true if the merge produced any change.
-  /// Call this right after sign-in or on app start.
+  
+  
+  
   Future<bool> bootstrapForUser(String userId) async {
     if (userId.isEmpty) return false;
     debugPrint(
       'PlaceProvider.bootstrapForUser: counting DB rows for $userId',
     );
-    // Fire an explicit COUNT for saved_places + place_checkins so any
-    // silent failure (RLS, missing table, network) is visible in
-    // logcat and the Profile counters can show the real numbers
-    // instead of 0. Errors are non-fatal - we still continue with the
-    // pull below.
+    
+    
+    
+    
+    
     final dbCounts = await SupabaseService.instance
         .countUserRows(userId);
     debugPrint(
@@ -300,8 +301,8 @@ class PlaceProvider extends ChangeNotifier {
     );
     final remote = await SupabaseService.instance.pullSavedPlaces(userId);
     final remoteIds = remote.map((p) => p.id).toSet();
-    // Keep the local entries that aren't already on the server, so a
-    // local toggle that hasn't synced yet is not silently dropped.
+    
+    
     final cleanLocal =
         _savedPlaces.where((p) => !remoteIds.contains(p.id)).toList();
     final merged = [...remote, ...cleanLocal];
@@ -343,21 +344,21 @@ class PlaceProvider extends ChangeNotifier {
     }
     final savedData = _savedPlaces.map((p) => jsonEncode(p.toJson())).toList();
     await prefs.setStringList('saved_places_data', savedData);
-    // v1.0.34: optimistic local bump so the Profile "Saved" counter
-    // updates instantly, before the Supabase round-trip. If the
-    // underlying write fails we undo the bump in the catch block below.
+    
+    
+    
     if (wasSaved) {
       unbumpLocalSavedCount();
     } else {
       bumpLocalSavedCount();
     }
     notifyListeners();
-    // Push the change to Supabase so the saved list survives a logout /
-    // device switch / reinstall. SharedPreferences is only the local
-    // cache. We AWAIT the call so any RLS / network failure is surfaced
-    // (debugPrint'd in SupabaseService) and not silently dropped, then
-    // notify listeners AGAIN once the DB write confirms the change so
-    // UI / counters stay in sync with the source of truth.
+    
+    
+    
+    
+    
+    
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     if (userId.isNotEmpty) {
       try {
@@ -369,8 +370,8 @@ class PlaceProvider extends ChangeNotifier {
             'PlaceProvider.toggleSave: Supabase write returned false '
             'for userId=$userId placeId=${place.id} wasSaved=$wasSaved',
           );
-          // Roll back the optimistic bump so the UI matches the DB.
-          // fetchRemoteCounts will refresh from the server next.
+          
+          
           if (wasSaved) {
             bumpLocalSavedCount();
           } else {
@@ -382,15 +383,15 @@ class PlaceProvider extends ChangeNotifier {
             'placeId=${place.id} wasSaved=$wasSaved',
           );
         }
-        // Re-emit so any UI listening for the second-tick (counters,
-        // saved badge) reflects the final DB state.
+        
+        
         notifyListeners();
       } catch (e, st) {
         debugPrint(
           'PlaceProvider.toggleSave: Supabase write threw for '
           'placeId=${place.id}: $e\n$st',
         );
-        // Roll back the optimistic bump so the UI matches the DB.
+        
         if (wasSaved) {
           bumpLocalSavedCount();
         } else {
@@ -431,15 +432,15 @@ class PlaceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Set the maximum price level (Free, Cheap, Moderate, Expensive).
-  /// Pass null to clear.
+  
+  
   void setMaxPriceLevel(PriceLevel? level) {
     _maxPriceLevel = level;
     _isFilterCheapest = level != null;
     notifyListeners();
   }
 
-  /// Toggle "only free places" filter.
+  
   void toggleOnlyFree() {
     _onlyFree = !_onlyFree;
     _isFilterCheapest = _onlyFree || _maxPriceLevel != null;
@@ -486,8 +487,8 @@ class PlaceProvider extends ChangeNotifier {
     return result;
   }
 
-  /// Parses the openHours string (e.g. "9:00 AM - 5:00 PM" or "Open 24 hours")
-  /// and returns true if the current time falls within the range.
+  
+  
   bool _isPlaceOpenNow(String openHours) {
     final clean = openHours.trim();
     if (clean.toLowerCase() == 'open 24 hours') return true;
@@ -506,7 +507,7 @@ class PlaceProvider extends ChangeNotifier {
     }
   }
 
-  /// Returns total minutes since midnight for strings like "9:00 AM", "5:30 PM", "17:00"
+  
   int? _parseHourMin(String s) {
     final upper = s.toUpperCase();
     final isPm = upper.contains('PM');
@@ -524,14 +525,14 @@ class PlaceProvider extends ChangeNotifier {
   }
 }
 
-/// Top-level helper: build a [PlaceModel] from a Supabase `places` row.
-/// Snugly tolerant of missing/extra columns and accepts both snake_case
-/// and camelCase keys so any caller (PlaceProvider, OfflineProvider,
-/// admin import scripts) sees the same result.
-///
-/// This was extracted from `PlaceProvider._placeFromSupabase` after the
-/// offline download bug where [PlaceModel.fromJson] was being used
-/// instead, throwing on every row because Supabase returns snake_case.
+
+
+
+
+
+
+
+
 PlaceModel placeModelFromSupabaseRow(Map<String, dynamic> json) {
   return PlaceModel(
     id: (json['id'] ?? '').toString(),

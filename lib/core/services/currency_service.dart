@@ -4,13 +4,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-/// Live exchange-rate service.
-///
-/// Hits the free open.er-api.com endpoint (no API key required) for daily
-/// rates against EGP. The result is cached in-memory for the duration of
-/// the app session and refreshes when older than 6 hours. A static
-/// fallback table is provided when the network is unavailable so the UI
-/// still works offline.
+
+
+
+
+
+
+
 class CurrencyService {
   CurrencyService._();
   static final CurrencyService instance = CurrencyService._();
@@ -18,8 +18,8 @@ class CurrencyService {
   static const _endpoint = 'https://open.er-api.com/v6/latest/EGP';
   static const _maxAge = Duration(hours: 6);
 
-  /// "EGP per 1 unit of [currency]" — symmetric with the in-code
-  /// fallback table so the conversion math is identical.
+  
+  
   Map<String, double>? _ratesPerEgp;
   DateTime? _fetchedAt;
   bool _fetching = false;
@@ -60,8 +60,8 @@ class CurrencyService {
     _ratesPerEgp ??= _fallback;
   }
 
-  /// Convert [amount] from [from] to [to]. Returns null when [from] or
-  /// [to] is unknown.
+  
+  
   Future<double?> convert(
     double amount,
     String from,
@@ -70,7 +70,7 @@ class CurrencyService {
     if (from == to) return amount;
     await _ensureFresh();
     final table = _ratesPerEgp ?? _fallback;
-    // API returns "EGP per 1 unit of X". Convert via EGP.
+    
     final fromRate = table[from];
     final toRate = table[to];
     if (fromRate == null || toRate == null) return null;
@@ -78,8 +78,8 @@ class CurrencyService {
     return inEgp / toRate;
   }
 
-  /// EGP-per-1-unit fallback table (May 2026 baseline). Used when the
-  /// live API is unreachable.
+  
+  
   static const Map<String, double> _fallback = {
     'EGP': 1.0,
     'USD': 49.5,

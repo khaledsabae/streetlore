@@ -54,20 +54,20 @@ class PlaceModel {
   final bool isHiddenGem;
   final int? priceLocalEgp;
   final int? priceForeignerEgp;
-  /// Per-place override for best-time scores per slot. Keys:
-  /// early_morning, morning, midday, afternoon, evening, night.
-  /// When null, the category default is used.
+  
+  
+  
   final Map<String, int>? bestTimeOverride;
-  /// Per-place note shown on the Best Time screen (already localized by
-  /// admin when entered).
+  
+  
   final String? bestTimeNote;
-  /// Admin-supplied "best time to visit" label (e.g. "Morning",
-  /// "Sunset", "Late Night"). When non-empty the Best Time screen
-  /// surfaces this label verbatim instead of computing one from the
-  /// scores.
+  
+  
+  
+  
   final String? bestTimeToVisit;
-  /// Whether the place is indoors (museum, mall, etc.) — used to refine
-  /// recommendations when no explicit override is supplied.
+  
+  
   final bool isIndoor;
 
   const PlaceModel({
@@ -98,7 +98,7 @@ class PlaceModel {
     this.isIndoor = false,
   });
 
-  /// Returns a string field in the current locale, falling back to English.
+  
   String _pick(String en, String? ar, String locale) {
     if (locale == 'ar' && ar != null && ar.isNotEmpty) return ar;
     return en;

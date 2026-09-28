@@ -92,8 +92,8 @@ class OfflineStorageService {
     }
   }
 
-  /// Raw access to the Hive box for places — used by
-  /// [OfflineProvider.removeCachedPlace] to drop a single key.
+  
+  
   Future<Box<dynamic>> get boxForPlaces async {
     if (!_ready) {
       await init();
@@ -101,10 +101,10 @@ class OfflineStorageService {
     return Hive.box(_placesBox);
   }
 
-  /// Eagerly fetch every place image into the standard
-  /// `DefaultCacheManager` disk cache so the `CachedNetworkImage`
-  /// widget used throughout the app can render the picture while
-  /// offline. Returns a record of (successCount, failCount).
+  
+  
+  
+  
   Future<({int ok, int failed})> prefetchImages(
     List<PlaceModel> places,
   ) async {
@@ -119,8 +119,8 @@ class OfflineStorageService {
       try {
         final fileInfo = await manager.downloadFile(url);
         if (kIsWeb) {
-          // On web `File` is not available so we accept the cache
-          // entry as success regardless.
+          
+          
           ok++;
         } else if (await fileInfo.file.exists()) {
           ok++;
@@ -138,8 +138,8 @@ class OfflineStorageService {
     return (ok: ok, failed: failed);
   }
 
-  /// Returns the cached image file for [placeId] if available.
-  /// Returns `null` on web (no File API) or when nothing was cached.
+  
+  
   Future<File?> getCachedImageFile(String placeId, String imageUrl) async {
     if (kIsWeb) return null;
     try {

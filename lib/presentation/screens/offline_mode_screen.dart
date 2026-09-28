@@ -196,15 +196,15 @@ class _AvailableTileState extends State<_AvailableTile> {
     final provider = context.read<OfflineProvider>();
     final placeProvider = context.read<PlaceProvider>();
     try {
-      // 1) Make sure PlaceProvider has finished loading so the
-      //    "available places" list is complete.
+      
+      
       if (placeProvider.loading) {
         await placeProvider.ensureLoaded();
       }
 
-      // 2) Use the in-memory list, but if it looks suspiciously
-      //    empty (< 5 places) pull a fresh copy from Supabase so the
-      //    download doesn't miss the rest of the catalogue.
+      
+      
+      
       var places = placeProvider.places;
       if (places.length < 5) {
         final fresh = await provider.pullAllPlacesFromSupabase();
@@ -213,9 +213,9 @@ class _AvailableTileState extends State<_AvailableTile> {
         }
       }
 
-      // 3) Run the actual download (JSON persistence + image prefetch).
-      //    The progress callback only updates the in-row progress bar
-      //    — no per-place snackbar spam.
+      
+      
+      
       final result = await provider.download(
         widget.pack,
         availablePlaces: places,

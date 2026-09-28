@@ -31,8 +31,8 @@ Future<void> main() async {
     url: AppConfig.supabaseUrl,
     publishableKey: AppConfig.supabaseAnonKey,
     authOptions: const FlutterAuthClientOptions(
-      // Auto-refresh tokens before expiry — default in v2 is true,
-      // made explicit here so a future SDK change can't silently turn it off.
+      
+      
       autoRefreshToken: true,
     ),
   );
@@ -61,12 +61,12 @@ Future<void> main() async {
     streak: streak,
   );
 
-  // ============================================================
-  // Pull the user's saved places / visited stats / saved tours from
-  // Supabase when a user becomes available. Without this the profile
-  // counters stay at 0 after a fresh install until the user manually
-  // saves their first place.
-  // ============================================================
+  
+  
+  
+  
+  
+  
   Future<void> bootstrapFromSupabase(String userId) async {
     await Future.wait([
       placeProvider.bootstrapForUser(userId),
@@ -79,8 +79,8 @@ Future<void> main() async {
   void authListener() {
     final id = auth.userId;
     if (id.isEmpty) return;
-    // Only fire on first non-empty user id (or when it changes after
-    // signOut -> signIn).
+    
+    
     if (id == _lastBootstrappedUserId) return;
     _lastBootstrappedUserId = id;
     unawaited(bootstrapFromSupabase(id));

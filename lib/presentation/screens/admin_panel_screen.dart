@@ -12,20 +12,20 @@ import '../../l10n/app_strings.dart';
 import '../../logic/auth_provider.dart';
 import '../../logic/place_provider.dart';
 
-/// Admin Panel for Streetlore.
-///
-/// v1.0.41 Phase 2: lets the admin (gated by
-/// [AuthProvider.isAdmin]) dynamically add new places to the
-/// `places` table with a free-text `category` column (so 'ATM',
-/// 'Hotel', 'Cafe', 'Restaurant' or anything else are all
-/// supported without a database enum migration).
-///
-/// v1.0.42: the manual lat/lng text fields are GONE. The admin
-/// types a place name / address into the Location Search box,
-/// the wrapper calls Nominatim (OpenStreetMap) for up to 5
-/// candidates inside the Alexandria bounding box, and the admin
-/// picks one. Selected coords are then sent to Supabase on
-/// submit. No more hardcoded bounding boxes for the user to fill.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
 
@@ -226,14 +226,14 @@ class _AddPlaceFormState extends State<_AddPlaceForm> {
   final _searchFocus = FocusNode();
   bool _submitting = false;
 
-  // v1.0.42: location picked from the geocoding search.
+  
   GeocodingResult? _picked;
   List<GeocodingResult> _searchResults = const [];
   bool _searching = false;
   Timer? _searchDebounce;
 
-  // Common preset categories the user can tap to pre-fill the
-  // category field. Anything else can still be typed free-form.
+  
+  
   static const List<MapEntry<String, String>> _categoryPresets = [
     MapEntry('ATM', '🏧'),
     MapEntry('Hotel', '🏨'),
@@ -247,9 +247,9 @@ class _AddPlaceFormState extends State<_AddPlaceForm> {
     MapEntry('Historical', '🏛️'),
   ];
 
-  /// v1.0.42: debounce user input by 400 ms before calling
-  /// Nominatim (which has a 1 req/sec usage policy) so a fast
-  /// typing user doesn't burn the rate limit.
+  
+  
+  
   void _onSearchChanged(String q) {
     _searchDebounce?.cancel();
     if (q.trim().length < 3) {
@@ -289,9 +289,9 @@ class _AddPlaceFormState extends State<_AddPlaceForm> {
     final lng = _picked!.lng;
     final category = _categoryCtrl.text.trim();
     final rating = double.tryParse(_ratingCtrl.text.trim()) ?? 4.5;
-    // If the admin didn't override the address field, use the
-    // display_name from the geocoder so the row lands with a
-    // sane address even if the admin rushed the form.
+    
+    
+    
     final address = _addressCtrl.text.trim().isNotEmpty
         ? _addressCtrl.text.trim()
         : _picked!.displayName;
@@ -324,8 +324,8 @@ class _AddPlaceFormState extends State<_AddPlaceForm> {
     try {
       await Supabase.instance.client.from('places').insert(payload);
       if (!mounted) return;
-      // Refresh the in-memory cache so the admin list + map show
-      // the new row immediately.
+      
+      
       await context.read<PlaceProvider>().refresh();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -402,7 +402,7 @@ class _AddPlaceFormState extends State<_AddPlaceForm> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Category preset chips
+          
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -508,8 +508,8 @@ class _AddPlaceFormState extends State<_AddPlaceForm> {
             label: context.tr('admin_field_address'),
             hint: 'auto-filled from the search above; edit if needed',
             icon: Icons.place_outlined,
-            validator: (v) => null, // Optional; we fall back to
-            // _picked.displayName if empty.
+            validator: (v) => null, 
+            
           ),
           const SizedBox(height: 12),
           _Field(
@@ -575,10 +575,10 @@ class _AddPlaceFormState extends State<_AddPlaceForm> {
   }
 }
 
-/// v1.0.42: a TextField that debounces user input and queries
-/// [GeocodingService]. Shows up to 5 results as a vertical list
-/// below the field; tapping one lifts the location into the
-/// hidden _picked state.
+
+
+
+
 class _LocationSearchField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;

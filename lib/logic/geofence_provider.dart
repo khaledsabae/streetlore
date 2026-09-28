@@ -30,10 +30,10 @@ class GeofenceProvider extends ChangeNotifier {
         ),
       );
     notifyListeners();
-    // Re-arm the background tracking service with whatever alerts
-    // persisted from the previous session. Without this, the position
-    // stream would only resume when the user manually re-opens the
-    // Geofencing settings screen.
+    
+    
+    
+    
     await _syncService();
   }
 
@@ -74,12 +74,12 @@ class GeofenceProvider extends ChangeNotifier {
   }
 
   Future<void> startMonitoring() async {
-    // v1.0.39: when the master "Monitoring your location" toggle is
-    // flipped ON, default-enable every persisted alert so the user
-    // doesn't have to opt in to every place one by one. Without
-    // this the master toggle could be ON while every individual
-    // place remained OFF (the persisted `enabled` flag from a
-    // previous session was preserved).
+    
+    
+    
+    
+    
+    
     for (var i = 0; i < _alerts.length; i++) {
       if (!_alerts[i].enabled) {
         _alerts[i] = _alerts[i].copyWith(enabled: true);

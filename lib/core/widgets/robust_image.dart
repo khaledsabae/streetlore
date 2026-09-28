@@ -53,19 +53,19 @@ class _RobustImageState extends State<RobustImage> {
     }
   }
 
-  /// Load order:
-  ///   1. Disk cache populated by the Offline Download flow
-  ///      (DefaultCacheManager via flutter_cache_manager).
-  ///   2. Live network fetch (also written through the same cache so
-  ///      the next view is offline-ready).
-  ///   3. Null → the UI shows the fallback icon.
+  
+  
+  
+  
+  
+  
   Future<Uint8List?> _load() async {
     try {
       final cached = await OfflineImageCache.instance.read(widget.imageUrl);
       if (cached != null) {
         return cached;
       }
-    } catch (_) {/* ignore and fall back to network */}
+    } catch (_) {}
     try {
       final res = await _client.get(
         Uri.parse(widget.imageUrl),
@@ -75,10 +75,10 @@ class _RobustImageState extends State<RobustImage> {
         },
       );
       if (res.statusCode == 200) {
-        // Persist to the shared cache so the same image is offline-ready
-        // for the next view. Fire-and-forget; the caller already has the
-        // bytes in memory.
-        // ignore: discarded_futures
+        
+        
+        
+        
         OfflineImageCache.instance.write(widget.imageUrl, res.bodyBytes);
         return res.bodyBytes;
       }
@@ -138,11 +138,11 @@ class _RobustImageState extends State<RobustImage> {
   }
 }
 
-/// Thin wrapper around [DefaultCacheManager] from `flutter_cache_manager`
-/// that gives the rest of the app a synchronous-read-style interface for
-/// cached network images. The Offline Download flow already populates
-/// this same manager, so an image that was prefetched will be served
-/// from disk on the next render — even with airplane mode on.
+
+
+
+
+
 class OfflineImageCache {
   OfflineImageCache._();
   static final OfflineImageCache instance = OfflineImageCache._();
@@ -164,13 +164,13 @@ class OfflineImageCache {
     }
   }
 
-  /// Write raw image bytes to the same disk cache used by
-  /// `CachedNetworkImage` and by `RobustImage`. Fire-and-forget.
+  
+  
   Future<void> write(String url, Uint8List bytes) async {
     try {
       await _manager.putFile(url, bytes);
     } catch (_) {
-      // best-effort write; never block the render path on it
+      
     }
   }
 }

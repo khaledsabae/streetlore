@@ -84,14 +84,14 @@ class GeofencingSettingsScreen extends StatelessWidget {
                 isMonitoring: geo.isMonitoring,
                 onChanged: (v) async {
                   if (v) {
-                    // v1.0.40: turning the master "Monitoring your
-                    // location" toggle ON also auto-enables every
-                    // place in the loaded list, so the user never
-                    // sees the previous bug where the master said
-                    // "monitoring" but every individual place
-                    // showed OFF (because `startMonitoring()` only
-                    // flipped the persisted alerts and there were
-                    // none for unconfigured places).
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    
                     await geo.startMonitoring();
                     for (final place in places) {
                       final existing = geo.alerts.firstWhere(
@@ -103,12 +103,12 @@ class GeofencingSettingsScreen extends StatelessWidget {
                           lng: place.lng,
                         ),
                       );
-                      // toggle() flips the `enabled` flag for
-                      // existing alerts and creates new ones as
-                      // enabled (model default = true). We only
-                      // invoke it when the alert is not already
-                      // enabled, so we don't disable anything by
-                      // accident.
+                      
+                      
+                      
+                      
+                      
+                      
                       if (!existing.enabled) {
                         await geo.toggle(existing);
                       }

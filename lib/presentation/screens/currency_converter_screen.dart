@@ -63,7 +63,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
           ? null
           : (res == null ? null : res / amount);
       _liveBadge = res != null ? 'live' : 'fallback';
-      // inEgp kept for symmetry with the convert() reverse path
+      
       inEgp.toString();
     });
   }

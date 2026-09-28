@@ -27,11 +27,11 @@ class DownloadEmpty extends DownloadResult {
   const DownloadEmpty(this.pack);
 }
 
-/// Optional progress callback fired by [OfflineProvider.download].
-///
-/// - [done] is the number of places whose JSON has been written.
-/// - [total] is the total number of places in the pack.
-/// - [imageOk] / [imageFail] are running counts of the image prefetch.
+
+
+
+
+
 typedef DownloadProgress = void Function(
   int done,
   int total, {
@@ -47,15 +47,15 @@ class OfflineProvider extends ChangeNotifier {
   List<OfflinePack> get packs => List.unmodifiable(_packs);
   List<PlaceModel> get cachedPlaces => List.unmodifiable(_cachedPlaces);
 
-  /// True when at least one pack is currently downloading.
+  
   bool _downloading = false;
   bool get isDownloading => _downloading;
   String? _downloadingPackId;
   String? get downloadingPackId => _downloadingPackId;
 
-  /// Static fallback exposed to [PlaceProvider] so that when the
-  /// network is down the app still has real data to show instead of
-  /// silently falling back to mock data.
+  
+  
+  
   static List<PlaceModel> get cachedFallback {
     final i = _instance;
     return i == null ? const [] : List.unmodifiable(i._cachedPlaces);
@@ -113,13 +113,13 @@ class OfflineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Fetch the full place list directly from Supabase, bypassing the
-  /// in-memory `PlaceProvider`. Returns an empty list when offline or
-  /// when the Supabase call fails.
-  ///
-  /// The Offline Download flow uses this when the in-memory place list
-  /// looks suspiciously small (less than 5 places), which indicates
-  /// `PlaceProvider.loadPlaces()` has not yet finished loading.
+  
+  
+  
+  
+  
+  
+  
   Future<List<PlaceModel>> pullAllPlacesFromSupabase() async {
     if (!AppConfig.supabaseEnabled) {
       debugPrint(
@@ -138,8 +138,8 @@ class OfflineProvider extends ChangeNotifier {
           .map((row) {
             try {
               final m = Map<String, dynamic>.from(row as Map);
-              // Use the snake_case-tolerant parser (NOT PlaceModel.fromJson,
-              // which expects camelCase and threw on every Supabase row).
+              
+              
               return placeModelFromSupabaseRow(m);
             } catch (e) {
               debugPrint(
@@ -162,9 +162,9 @@ class OfflineProvider extends ChangeNotifier {
     }
   }
 
-  /// Look up a place by id from the Hive cache (synchronous, no async
-  /// hop). Used by the offline Place Details page when the in-memory
-  /// `PlaceProvider` doesn't have the place yet.
+  
+  
+  
   static PlaceModel? findCachedPlace(String id) {
     final i = _instance;
     if (i == null) return null;
@@ -174,23 +174,23 @@ class OfflineProvider extends ChangeNotifier {
     return null;
   }
 
-  /// True when [place] is already in the local offline cache.
+  
   bool isCached(String placeId) =>
       _cachedPlaces.any((p) => p.id == placeId);
 
-  /// Download a SINGLE place for offline use (one-tap action from the
-  /// Place Details screen). Caches the JSON blob AND prefetches the
-  /// hero image into the disk cache used by CachedNetworkImage.
-  ///
-  /// Per the v1.0.22 spec, offline is no longer a global pack-based
-  /// action — users grab places one by one from the Place Details page.
-  /// Returns a [DownloadOk] with `cachedCount=1` on success.
+  
+  
+  
+  
+  
+  
+  
   Future<DownloadResult> downloadSinglePlace(PlaceModel place) async {
     try {
-      // Phase 1: persist the JSON so the model survives a cold start
-      // with no network.
+      
+      
       await _storage.cachePlaces([place]);
-      // Phase 2: prefetch the hero image.
+      
       final imgResult = await _storage.prefetchImages([place]);
       _cachedPlaces = _storage.getCachedPlaces();
       notifyListeners();
@@ -220,12 +220,12 @@ class OfflineProvider extends ChangeNotifier {
     }
   }
 
-  /// Remove a single place from the offline cache (its JSON + image
-  /// eviction is handled by Hive's TTL on the cache manager).
+  
+  
   Future<void> removeCachedPlace(String placeId) async {
     final i = _instance;
     if (i == null) return;
-    // Hive stores each place under its own key — drop just that one.
+    
     final box = await (i._storage).boxForPlaces;
     await box.delete(placeId);
     _cachedPlaces = _storage.getCachedPlaces();
@@ -238,8 +238,8 @@ class OfflineProvider extends ChangeNotifier {
     DownloadProgress? onProgress,
   }) async {
     if (_downloading) {
-      // Already downloading a different pack — refuse rather than
-      // corrupting progress state.
+      
+      
       return DownloadEmpty(pack);
     }
     _downloading = true;
@@ -263,8 +263,8 @@ class OfflineProvider extends ChangeNotifier {
         return DownloadEmpty(pack);
       }
 
-      // Phase 1: persist the JSON blobs so the place model is
-      // available even if image prefetch fails partway through.
+      
+      
       onProgress?.call(0, places.length, imageOk: 0, imageFail: 0);
       for (var i = 0; i < places.length; i++) {
         await _storage.cachePlaces([places[i]]);
@@ -276,8 +276,8 @@ class OfflineProvider extends ChangeNotifier {
         );
       }
 
-      // Phase 2: prefetch every place's hero image into the disk
-      // cache used by CachedNetworkImage.
+      
+      
       int imageOk = 0;
       int imageFail = 0;
       final total = places.length;

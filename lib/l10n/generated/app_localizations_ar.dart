@@ -462,6 +462,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get admin_failed => 'فشل';
 
   @override
+  String get admin_location_search => 'بحث عن موقع (Nominatim / OpenStreetMap)';
+
+  @override
+  String get admin_location_search_hint =>
+      'اكتب اسم مكان أو عنوان (مثلاً \"Bibliotheca Alexandrina\")';
+
+  @override
+  String get admin_location_no_results => 'مفيش نتائج. جرّب استعلام أعم.';
+
+  @override
+  String get admin_err_location => 'اختار موقع من نتائج البحث الأول.';
+
+  @override
   String get emg_transport => 'المواصلات';
 
   @override

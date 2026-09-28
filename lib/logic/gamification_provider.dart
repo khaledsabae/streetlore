@@ -14,13 +14,13 @@ class GamificationProvider extends ChangeNotifier {
   );
   GamificationStats get stats => _stats;
 
-  /// v1.0.35: the EXACT error message from the last failed
-  /// `place_checkins` insert (PostgrestException.message or, when the
-  /// exception wasn't typed, the raw `toString()`). Cleared at the
-  /// start of every `applyAction` call so a stale error doesn't leak
-  /// to the next attempt. The check-in screen reads this to show the
-  /// real reason behind the red SnackBar (RLS denial / missing column
-  /// / etc.) instead of a generic "not saved to database" string.
+  
+  
+  
+  
+  
+  
+  
   String? _lastCheckinError;
   String? get lastCheckinError => _lastCheckinError;
 
@@ -60,12 +60,12 @@ class GamificationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Pull the latest stats row for [userId] from Supabase and MERGE
-  /// with the locally cached values. Counters and points take the
-  /// MAX of (local, remote) so a local increment done while the
-  /// Supabase push hadn't synced yet is not lost. Badges are unioned.
-  ///
-  /// Call this right after sign-in / on app start.
+  
+  
+  
+  
+  
+  
   Future<void> bootstrapForUser(String userId) async {
     if (userId.isEmpty) return;
     final remote = await SupabaseService.instance.pullStats(userId);
@@ -76,8 +76,8 @@ class GamificationProvider extends ChangeNotifier {
       return;
     }
     final local = _stats;
-    // Counter fields take the MAX so a local increment doesn't get
-    // overwritten by stale remote data.
+    
+    
     final mergedPoints = remote.totalPoints > local.totalPoints
         ? remote.totalPoints
         : local.totalPoints;
@@ -120,9 +120,9 @@ class GamificationProvider extends ChangeNotifier {
   }
 
   Future<Badge?> applyAction(String action, {String? placeId}) async {
-    // v1.0.35: clear any stale error from the previous check-in attempt
-    // so the screen never shows a leftover red SnackBar after the next
-    // tap succeeds.
+    
+    
+    
     if (action == 'check_in') {
       _lastCheckinError = null;
     }
@@ -155,19 +155,19 @@ class GamificationProvider extends ChangeNotifier {
     await _save();
     notifyListeners();
 
-    // Persist the check-in as a row in `place_checkins` so it shows up
-    // across devices / sessions. We AWAIT the call so any RLS / network
-    // failure is debugPrint'd instead of being silently dropped, then
-    // emit a second notifyListeners tick so any UI listening for the
-    // final state (counters, badges) reflects the DB write.
+    
+    
+    
+    
+    
     if (action == 'check_in' && placeId != null && placeId.isNotEmpty) {
       final userId =
           SupabaseService.instance.clientOrNull?.auth.currentUser?.id ?? '';
       if (userId.isNotEmpty) {
-        // v1.0.35: registerCheckin now returns
-        // `({bool ok, PostgrestException? error})` so we can capture the
-        // EXACT server reason (RLS policy / schema mismatch / table
-        // missing / network) and expose it through `lastCheckinError`.
+        
+        
+        
+        
         final result = await SupabaseService.instance.registerCheckin(
           userId,
           placeId,

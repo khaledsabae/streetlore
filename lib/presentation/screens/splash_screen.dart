@@ -183,9 +183,9 @@ class _SplashScreenState extends State<SplashScreen>
                             child: Transform.scale(
                               scale: scale,
                               child: Container(
-                                // v1.0.31: matched to the login screen
-                                // size (200x200) so the logo sits
-                                // elegantly during the splash.
+                                
+                                
+                                
                                 width: 200,
                                 height: 200,
                                 foregroundDecoration: BoxDecoration(

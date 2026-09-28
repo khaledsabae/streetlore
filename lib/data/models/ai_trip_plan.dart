@@ -1,6 +1,6 @@
-/// Provenance of a generated plan or chat reply. UI uses this to label the
-/// answer as `live` (real Gemini API) or `local` (offline fallback) so the
-/// user is never misled into thinking static text is an AI response.
+
+
+
 enum AiSource { live, local }
 
 class AiTripPlan {

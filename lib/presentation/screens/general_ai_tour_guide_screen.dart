@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/ai_tour_guide_service.dart';
 
-/// Free-form "General AI Tour Guide" screen reachable from the Home
-/// page FAB. No `place` argument — questions can be about anything in
-/// Alexandria. The service enforces a strict tourism-only system
-/// prompt so the model stays on topic.
+
+
+
+
 class GeneralAITourGuideScreen extends StatefulWidget {
   const GeneralAITourGuideScreen({super.key});
 

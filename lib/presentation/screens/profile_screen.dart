@@ -46,11 +46,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _refreshOnNextFrame();
   }
 
-  /// Re-fetch the remote counts every time the Profile tab gains focus
-  /// (i.e. the user navigates here from a Save / Check-in action).
-  /// `initState` only fires once, and bottom-nav tabs are kept alive
-  /// in memory, so without this hook the counters would freeze at the
-  /// value they had the first time the screen was built.
   void _refreshOnNextFrame() {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -301,7 +296,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             _Stat(
                               label: context.tr('prof_saved'),
-                              numericValue: placeP.savedPlaces.length > placeP.remoteSavedCount
+                              numericValue:
+                                  placeP.savedPlaces.length >
+                                      placeP.remoteSavedCount
                                   ? placeP.savedPlaces.length
                                   : placeP.remoteSavedCount,
                               icon: Icons.bookmark_rounded,
@@ -312,29 +309,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               height: 36,
                               color: Colors.white.withValues(alpha: 0.2),
                             ),
-                            // Explored counter: v1.0.43. The digit
-                            // is the live Supabase count of rows in
-                            // place_checkins for this user, fetched
-                            // on every Profile load (SchedulerBinding
-                            // addPostFrameCallback in _refreshOnNextFrame)
-                            // and right after every check-in /
-                            // un-check-in (place_details_screen
-                            // awaits placeProvider.fetchRemoteCounts
-                            // on the success path). No local cache.
-                            // We still keep a MAX against savedPlaces
-                            // length + gamVisited so the digit never
-                            // appears to drop during the brief window
-                            // before the DB count arrives.
+
                             _Stat(
                               label: context.tr('prof_explored'),
-                              numericValue: () {
-                                final local = placeP.savedPlaces.length;
-                                final remoteCheckins = placeP.remoteCheckinCount;
-                                final gamVisited = gamification.stats.placesVisited;
-                                final best = [local, remoteCheckins, gamVisited]
-                                    .reduce((a, b) => a > b ? a : b);
-                                return best;
-                              }(),
+                              numericValue: placeP.remoteCheckinCount,
                               icon: Icons.explore_rounded,
                               delayMs: 320,
                             ),
@@ -732,9 +710,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               Text(
                                 context.tr('passion_banner_sub'),
                                 style: TextStyle(
-                                  color: Colors.white.withValues(
-                                    alpha: 0.92,
-                                  ),
+                                  color: Colors.white.withValues(alpha: 0.92),
                                   fontSize: 12,
                                   height: 1.4,
                                 ),
@@ -913,11 +889,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           },
                         ),
                         _Div(),
-                        // v1.0.41: Admin Panel tile, only rendered when
-                        // AuthProvider.isAdmin returns true (gated by
-                        // email list / user_metadata.role check inside
-                        // the provider). Non-admin users never see this
-                        // row.
+
                         Consumer<AuthProvider>(
                           builder: (context, auth, _) {
                             if (!auth.isAdmin) return const SizedBox.shrink();
@@ -933,8 +905,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        const AdminPanelScreen(),
+                                    builder: (_) => const AdminPanelScreen(),
                                   ),
                                 );
                               },

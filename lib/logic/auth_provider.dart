@@ -30,25 +30,25 @@ class AuthProvider extends ChangeNotifier {
   String get userId => _userId;
   bool get isGuest => _isGuest;
 
-  /// v1.0.41: admin gate. Add an email here (or extend the list)
-  /// to gate the AdminPanelScreen. Hard-coded locally because the
-  /// build pipeline has no admin-RPC yet.
-  ///
-  /// Also matches by:
-  ///   - any email containing "mohamedsabae50" (the project owner
-  ///     username - works whether they sign in via the GitHub
-  ///     no-reply email or a personal one)
-  ///   - Supabase user_metadata.role == 'admin' (set via SQL UPDATE
-  ///     on auth.users.user_metadata to grant access to additional
-  ///     accounts without rebuilding the app)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   bool get isAdmin {
     final email = _userEmail.toLowerCase().trim();
     if (email.isEmpty) return false;
     if (_adminEmails.contains(email)) return true;
     if (email.contains('mohamedsabae50')) return true;
-    // user_metadata.role: 'admin' check - we only know the current
-    // cached values, so this is best-effort. The server-side
-    // PostgrestException on the admin insert is the real authority.
+    
+    
+    
     return false;
   }
 
@@ -70,9 +70,9 @@ class AuthProvider extends ChangeNotifier {
         final event = data.event;
         if (event == AuthChangeEvent.signedIn ||
             event == AuthChangeEvent.tokenRefreshed) {
-          // Re-pull user info AND mirror the latest tokens to SharedPreferences
-          // so we can restore the session even if Supabase's own storage is
-          // cleared or fails to read on this device.
+          
+          
+          
           unawaited(_syncFromSupabase());
         } else if (event == AuthChangeEvent.signedOut) {
           _isLoggedIn = false;
@@ -100,11 +100,11 @@ class AuthProvider extends ChangeNotifier {
     _hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
 
     if (AppConfig.supabaseEnabled) {
-      // Bulletproof restore — try in order:
-      //   1) Supabase's already-restored currentSession
-      //   2) explicit refreshSession (refreshes expired tokens)
-      //   3) wait for onAuthStateChange to deliver initialSession event
-      //   4) restore from our own SharedPreferences mirror via setSession()
+      
+      
+      
+      
+      
       Session? session = Supabase.instance.client.auth.currentSession;
       session ??= await _tryRefresh();
       session ??= await _waitForInitialSession();
@@ -168,8 +168,8 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Pulls the latest user info from the active Supabase session into local
-  /// state and persists it to SharedPreferences.
+  
+  
   Future<void> _syncFromSupabase() async {
     final client = Supabase.instance.client.auth;
     final user = client.currentUser;
@@ -194,9 +194,9 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
-  /// Exchanges the deep-link URI (from the OAuth redirect) for a Supabase
-  /// session. Called from the platform `app_links` / `uni_links` callback
-  /// when the browser returns to `io.supabase.streetlore:
+  
+  
+  
   Future<bool> handleAuthCallback(Uri uri) async {
     if (!AppConfig.supabaseEnabled) return false;
     try {
@@ -217,12 +217,12 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     final cleanEmail = email.trim().toLowerCase();
     final cleanPassword = password;
-    // v1.0.41: explicit username collection on sign-up. Stored in
-    // Supabase auth.user_metadata.username + mirrored in
-    // SharedPreferences so we can show it in the Profile / chat
-    // even when the user is signed in offline. Sign-in does not
-    // require a username (the user's existing username comes back
-    // via user_metadata), keeping the login screen light.
+    
+    
+    
+    
+    
+    
     final cleanUsername = username?.trim() ?? '';
     final cleanName =
         (name?.trim().isNotEmpty ?? false) ? name!.trim() : _emailLocalPart(cleanEmail);
@@ -238,8 +238,8 @@ class AuthProvider extends ChangeNotifier {
       }
     }
 
-    // Prefer Supabase auth when available so the user account is real
-    // and syncs across devices.
+    
+    
     if (AppConfig.supabaseEnabled) {
       try {
         if (isSignUp) {
@@ -274,7 +274,7 @@ class AuthProvider extends ChangeNotifier {
         }
         return 'auth_failed';
       } on AuthException catch (e) {
-        // Map common Supabase errors to UI strings.
+        
         final msg = e.message.toLowerCase();
         if (isSignUp && msg.contains('already registered')) {
           return 'account_exists';
@@ -292,12 +292,12 @@ class AuthProvider extends ChangeNotifier {
         return 'auth_failed';
       } catch (e) {
         debugPrint('AuthProvider.signIn unexpected: $e');
-        // Fall through to local-only sign-in below.
+        
       }
     }
 
-    // Offline / Supabase-disabled fallback: store the credentials locally
-    // so the user can still try the app without a backend.
+    
+    
     final prefs = await SharedPreferences.getInstance();
 
     if (isSignUp) {
@@ -335,9 +335,9 @@ class AuthProvider extends ChangeNotifier {
     return null;
   }
 
-  /// v1.0.41: username validation. We accept letters, digits,
-  /// underscore, dot, and dash, 3-20 chars. No leading dot/dash to
-  /// keep the @-mention readable. Email-local-part style.
+  
+  
+  
   bool _isValidUsername(String u) {
     if (u.length < 3 || u.length > 20) return false;
     if (u.startsWith('.') || u.startsWith('-') || u.startsWith('_')) {
@@ -346,12 +346,12 @@ class AuthProvider extends ChangeNotifier {
     return RegExp(r'^[A-Za-z0-9._-]+$').hasMatch(u);
   }
 
-  /// Derive a friendly display name from the email local-part.
+  
   String _emailLocalPart(String email) {
     final at = email.indexOf('@');
     if (at <= 0) return 'Explorer';
     final local = email.substring(0, at);
-    // Replace separators with spaces, capitalize each word.
+    
     final cleaned = local.replaceAll(RegExp(r'[._\-+]'), ' ').trim();
     if (cleaned.isEmpty) return 'Explorer';
     return cleaned
@@ -361,10 +361,10 @@ class AuthProvider extends ChangeNotifier {
         .join(' ');
   }
 
-  /// Persist a parallel mirror of the active session to SharedPreferences
-  /// so the user can be restored even when Supabase's own secure storage
-  /// fails (the classic "I keep getting logged out" symptom on some
-  /// Android devices). Safe to call from anywhere.
+  
+  
+  
+  
   Future<void> _persistAuthSnapshot({
     String? accessToken,
     String? refreshToken,
@@ -388,8 +388,8 @@ class AuthProvider extends ChangeNotifier {
     await prefs.setString('user_id', _userId);
   }
 
-  /// Restore a Supabase session from a previously persisted snapshot.
-  /// Called from bootstrap when Supabase's own session restore fails.
+  
+  
   Future<bool> restoreFromPrefsSnapshot() async {
     if (!AppConfig.supabaseEnabled) return false;
     final prefs = await SharedPreferences.getInstance();
@@ -398,8 +398,8 @@ class AuthProvider extends ChangeNotifier {
     if (access == null || refresh == null) return false;
     try {
       final res = await Supabase.instance.client.auth
-          .setSession(access); // refreshes if expired
-      // setSession returns AuthResponse; fall through to user check.
+          .setSession(access); 
+      
       return res.session != null;
     } catch (e) {
       debugPrint('AuthProvider.restoreFromPrefsSnapshot: $e');
@@ -437,25 +437,25 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    // ============================================================
-    // DEFINITIVE sign-out — clears every possible storage layer so
-    // the next cold start can NOT auto-restore the session.
-    //
-    // Order:
-    //   1) Flip local state to logged-out (UI updates instantly).
-    //   2) Call Supabase.auth.signOut() — clears server-side + its
-    //      SharedPreferences key.
-    //   3) Wipe flutter_secure_storage (any future or rogue secure
-    //      storage entry that may still hold a token).
-    //   4) Sweep every SharedPreferences key we ever wrote
-    //      (sb-*, user_*, is_logged_in, etc.) AND every Supabase
-    //      host-named key.
-    //   5) Notify listeners (the UI layer reacts and replaces the
-    //      navigation stack with the Login screen).
-    // ============================================================
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
-    // 1) Flip state immediately so UI reflects logged-out before any
-    //    await network round-trip.
+    
+    
     _isLoggedIn = false;
     _isGuest = false;
     _userId = '';
@@ -464,7 +464,7 @@ class AuthProvider extends ChangeNotifier {
     _userEmail = '';
     notifyListeners();
 
-    // 2) Server-side + Supabase SDK local storage.
+    
     if (AppConfig.supabaseEnabled) {
       try {
         await Supabase.instance.client.auth.signOut();
@@ -473,10 +473,10 @@ class AuthProvider extends ChangeNotifier {
       }
     }
 
-    // 3) Belt-and-braces: clear flutter_secure_storage too. Even if
-    //    the SDK is currently configured with SharedPreferencesLocalStorage,
-    //    an old build or a custom override might have used secure
-    //    storage. We don't want a leftover token to survive.
+    
+    
+    
+    
     try {
       const secure = FlutterSecureStorage(
         aOptions: AndroidOptions(
@@ -484,7 +484,7 @@ class AuthProvider extends ChangeNotifier {
           resetOnError: true,
         ),
       );
-      // Wipe every well-known key plus a final sweep.
+      
       const knownKeys = <String>[
         'supabase_access_token',
         'supabase_refresh_token',
@@ -502,7 +502,7 @@ class AuthProvider extends ChangeNotifier {
           await secure.delete(key: k);
         } catch (_) {}
       }
-      // Wipe every key in the secure storage.
+      
       try {
         final all = await secure.readAll();
         for (final entry in all.entries) {
@@ -515,7 +515,7 @@ class AuthProvider extends ChangeNotifier {
       debugPrint('AuthProvider.signOut: secure storage clear failed: $e');
     }
 
-    // 4) Wipe SharedPreferences mirrors + Supabase's own key.
+    
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_logged_in', false);
     await prefs.setBool('is_guest', false);
@@ -529,9 +529,9 @@ class AuthProvider extends ChangeNotifier {
     await prefs.remove('sb_expires_at_ms');
     await prefs.remove('has_seen_onboarding');
 
-    // The Supabase SDK stores its persisted session under a key like
-    // `sb-<host>-auth-token`. Wipe it by name and sweep any other
-    // `sb-*` key as a final defensive clear.
+    
+    
+    
     final hostFirstSegment =
         Uri.parse(AppConfig.supabaseUrl).host.split('.').first;
     await prefs.remove('sb-$hostFirstSegment-auth-token');
@@ -542,15 +542,15 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Native Google Sign-In using the google_sign_in package directly.
-  /// This bypasses the OAuth deep link flow and works reliably on Android.
+  
+  
   Future<String?> signInWithGoogleNative() async {
     if (!AppConfig.supabaseEnabled) return 'supabase_disabled';
-    // v1.0.30: updated to the Web Client ID that matches the Google
-    // Cloud Console OAuth 2.0 Web application (ends with
-    // ...dqa1jp.apps.googleusercontent.com). The old ID ended in
-    // ...dqa7ij and was tied to a different cloud project, which is
-    // what produced the Code 10 mismatch.
+    
+    
+    
+    
+    
     debugPrint(
       'GoogleSignIn: serverClientId=504340157609-pj8ook9662299u613glititqn4dqa1jp (com.streetlore)',
     );
@@ -575,8 +575,8 @@ class AuthProvider extends ChangeNotifier {
         idToken: idToken,
         accessToken: googleAuth.accessToken,
       );
-      // Mirror the fresh session tokens to SharedPreferences so the next
-      // cold start can restore even if Supabase storage is broken.
+      
+      
       await _syncFromSupabase();
       return null;
     } catch (e, st) {

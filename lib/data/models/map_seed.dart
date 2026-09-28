@@ -3,25 +3,25 @@ import 'package:flutter/material.dart';
 import '../models/place_model.dart';
 import 'map_poi.dart';
 
-/// Static seed of well-known Alexandria ATMs and hotels. Used by the
-/// map view as opt-in layers:
-///
-///   - ATMs only appear when the user toggles the ATM filter on, so
-///     the default map stays uncluttered.
-///   - Hotels appear when the user filters by `Hotels` or when the
-///     overlay is enabled.
-///
-/// Real banks / hotel chains flagged in the data; pin markers use
-/// each bank's brand color where known and fall back to a neutral
-/// indigo for hotels.
+
+
+
+
+
+
+
+
+
+
+
 List<MapPoi> getSeedAtms() => _atms;
 
 List<MapPoi> getSeedHotels() => _hotels;
 
-/// Returns the hotels as full [PlaceModel] instances so they show up
-/// in the Home list, support save/check-in, and open the standard
-/// Place Details screen when tapped. Hotels are *real places* with
-/// category `Hotels` (mirrors the historical-tourist place flow).
+
+
+
+
 List<PlaceModel> getSeedHotelPlaces() => _hotelPlaces;
 
 const Map<String, Color> _bankColors = {
@@ -38,7 +38,7 @@ const Map<String, Color> _bankColors = {
 };
 
 List<MapPoi> _atms = const [
-  // Core downtown & waterfront cluster
+  
   MapPoi(
     id: 'atm-cib-qaid-bay',
     name: 'CIB ATM - Qaitbay Citadel',
@@ -320,8 +320,8 @@ List<MapPoi> _hotels = const [
   ),
 ];
 
-// Hotels promoted to full PlaceModel so they appear in Home + Search,
-// support save/check-in, and open the standard Place Details screen.
+
+
 const String _hotelHeroImage =
     'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&q=70';
 
@@ -363,5 +363,5 @@ List<PlaceModel> _hotelPlaces = _hotels
     )
     .toList(growable: false);
 
-// Kept for future use if banks table is added to Supabase.
+
 Map<String, Color> get bankColors => _bankColors;

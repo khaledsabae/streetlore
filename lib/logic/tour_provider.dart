@@ -147,8 +147,8 @@ class TourProvider extends ChangeNotifier {
     await prefs.setString('saved_tours_data', encodedList);
   }
 
-  /// Pull saved tours from Supabase and merge with the local cache.
-  /// Call this right after sign-in / on app start.
+  
+  
   Future<bool> bootstrapForUser(String userId) async {
     if (userId.isEmpty) return false;
     final remoteMaps = await SupabaseService.instance.pullSavedTours(userId);
@@ -162,7 +162,7 @@ class TourProvider extends ChangeNotifier {
     for (final m in remoteMaps) {
       try {
         remote.add(ItineraryModel.fromJson(m));
-      } catch (_) {/* skip bad rows */}
+      } catch (_) {}
     }
     final remoteIds = remote.map((t) => t.id).toSet();
     final localOnly =

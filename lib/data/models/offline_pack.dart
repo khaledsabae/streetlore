@@ -2,11 +2,11 @@ class OfflinePack {
   final String id;
   final String name;
   final String description;
-  /// Explicit place IDs included in this pack. Use `['__all__']` to
-  /// include every place (mutually exclusive with [categories]).
+  
+  
   final List<String> placeIds;
-  /// Categories matched (case-insensitive) when this pack is downloaded.
-  /// Ignored if [placeIds] is `['__all__']` or contains a real ID.
+  
+  
   final List<String> categories;
   final int sizeMb;
   final DateTime? downloadedAt;

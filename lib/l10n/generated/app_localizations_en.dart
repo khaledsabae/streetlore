@@ -464,6 +464,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get admin_failed => 'Failed';
 
   @override
+  String get admin_location_search =>
+      'Location search (Nominatim / OpenStreetMap)';
+
+  @override
+  String get admin_location_search_hint =>
+      'Type a place name or address (e.g. \"Bibliotheca Alexandrina\")';
+
+  @override
+  String get admin_location_no_results =>
+      'No results. Try a more specific query.';
+
+  @override
+  String get admin_err_location =>
+      'Pick a location from the search results first.';
+
+  @override
   String get emg_transport => 'Transport';
 
   @override
