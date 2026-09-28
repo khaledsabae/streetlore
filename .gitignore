@@ -50,5 +50,6 @@ app.*.map.json
 serve.dart
 
 # Local one-off scripts
+*.ps1
 strip_comments.ps1
 .release_payload.json
