@@ -214,7 +214,17 @@ safety, and accessibility.''';
 
   String _summarizeError(Object e) {
     if (e is GeminiApiException) {
-      final code = e.statusCode;
+      var code = e.statusCode;
+      // v1.0.44: statusCode 599 is the "all keys × all models failed"
+      // sentinel. The GeminiRestClient puts the real last HTTP status
+      // inside `message` as a "(Error: NNN)" suffix. Parse it out so
+      // the user sees the actual cause, not the sentinel.
+      if (code == 599) {
+        final m = RegExp(r'\(Error:\s*(\d{3})\)').firstMatch(e.message);
+        if (m != null) {
+          code = int.tryParse(m.group(1) ?? '') ?? 599;
+        }
+      }
       if (code == 0) return 'Network error: ${e.message}';
       if (code == 400) {
         return 'Bad request (400): ${_trim(e.message)} — likely invalid API '
@@ -526,19 +536,16 @@ class _LiveSession {
     if (result == null) {
       throw GeminiApiException(
         statusCode: 0,
-        message: 'AI not configured',
+        message: 'AI not configured (no api keys)',
       );
     }
-    // v1.0.38: same friendly-fallback detection as the static
-    // `askOnce` path above. Sentinel statusCode 599 means every
-    // (key, model) attempt failed and GeminiRestClient has already
-    // packaged a human-readable message in `result.text`.
-    if (result.statusCode == 599) {
-      return _LiveReply(
-        text: result.text ??
-            "Sorry, I am currently unavailable. Please try again in a moment.",
-      );
-    }
+    // v1.0.44: do NOT silently swallow the 599 "all keys × all models failed"
+    // sentinel. The user explicitly asked to see the actual error in the
+    // chat bubble when the API fails. We extract the underlying HTTP
+    // status (e.g. the 401 / 403 / 429 / 404 of the LAST attempt) from
+    // `errorBody` so the catch handler can render it as `⚠️ Gemini API:
+    // (HTTP 404) ...`. If `errorBody` already has structured info we
+    // preserve it verbatim.
     if (!result.isOk) {
       throw GeminiApiException(
         statusCode: result.statusCode,

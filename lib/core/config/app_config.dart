@@ -70,7 +70,15 @@ class AppConfig {
   /// `gemini-1.5-flash`, then `gemini-1.0-pro` (same key, different
   /// model). The 5-key rotation from v1.0.34 and the SDK
   /// `x-goog-api-key` header from v1.0.36 are unchanged.
-  static const String geminiModel = 'gemini-1.5-flash-002';
+  ///
+  /// v1.0.44: bumped from `gemini-1.5-flash-002` to `gemini-2.0-flash`.
+  /// Google retired the `-002` / `-001` versioned snapshots from the
+  /// v1beta endpoint in 2025; every call to the v1.0.43 default model
+  /// returned 404 BEFORE we could ever fall through to the working
+  /// `2.0-flash` / `1.5-flash-latest` names in the fallback chain. The
+  /// fallback chain is still tried (in order) so a future deprecation
+  /// of `2.0-flash` will auto-fall-through to the next entry.
+  static const String geminiModel = 'gemini-2.0-flash';
   static const bool geminiEnabled = true;
   static const bool newFeaturesEnabled = true;
   static const int defaultGeofenceRadius = 500;
