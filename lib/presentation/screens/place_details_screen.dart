@@ -565,22 +565,14 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                             'place_id': place.id,
                                           }, onConflict: 'user_id, place_id')
                                               .select();
-                                          // ============================================
-                                          // "IMMEDIATELY after this line
-                                          // executes without throwing,
-                                          // manually force the local UI
-                                          // counters to increment and
-                                          // call setState() or
-                                          // notifyListeners(). Do not
-                                          // wait for a remote fetch."
-                                          // (user spec, v1.0.36)
-                                          // ============================================
-                                          placeProvider
-                                              .bumpLocalCheckinCount();
-                                          // Re-fetch in the background so
-                                          // the Server-side counter
-                                          // eventually matches; do not
-                                          // block the UI on it.
+                                          // v1.0.43: removed
+                                          // `bumpLocalCheckinCount()`. The
+                                          // Profile Explored counter is
+                                          // now driven ONLY by the live
+                                          // Supabase count returned by
+                                          // `fetchRemoteCounts(userId)`,
+                                          // called right after every
+                                          // check-in / un-check-in.
                                           // ignore: unawaited_futures
                                           placeProvider
                                               .fetchRemoteCounts(userId);
@@ -708,16 +700,11 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                               .delete()
                                               .eq('user_id', userId)
                                               .eq('place_id', place.id);
-                                          // Decrement the local
-                                          // counter so the Profile
-                                          // "Explored" digit moves
-                                          // back on next open.
-                                          placeProvider
-                                              .unbumpLocalCheckinCount();
-                                          // Re-fetch in the
-                                          // background so the
-                                          // server-side counter
-                                          // eventually matches.
+                                          // v1.0.43: removed
+                                          // `unbumpLocalCheckinCount()`.
+                                          // Refresh the Profile "Explored"
+                                          // counter straight from Supabase
+                                          // via `fetchRemoteCounts(userId)`.
                                           // ignore: unawaited_futures
                                           placeProvider
                                               .fetchRemoteCounts(userId);

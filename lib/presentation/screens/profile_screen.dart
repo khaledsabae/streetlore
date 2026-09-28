@@ -312,23 +312,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               height: 36,
                               color: Colors.white.withValues(alpha: 0.2),
                             ),
-                            // Explored counter: lifetime check-in
-                            // count (monotonic, NOT decremented on
-                            // uncheck) drives the headline digit so a
-                            // check-in + uncheck sequence still
-                            // increments the achievement. Falls back
-                            // to MAX(saved, remote, gamification)
-                            // for first-launch / cold-start edge
-                            // cases where lifetime hasn't been
-                            // populated yet.
+                            // Explored counter: v1.0.43. The digit
+                            // is the live Supabase count of rows in
+                            // place_checkins for this user, fetched
+                            // on every Profile load (SchedulerBinding
+                            // addPostFrameCallback in _refreshOnNextFrame)
+                            // and right after every check-in /
+                            // un-check-in (place_details_screen
+                            // awaits placeProvider.fetchRemoteCounts
+                            // on the success path). No local cache.
+                            // We still keep a MAX against savedPlaces
+                            // length + gamVisited so the digit never
+                            // appears to drop during the brief window
+                            // before the DB count arrives.
                             _Stat(
                               label: context.tr('prof_explored'),
                               numericValue: () {
                                 final local = placeP.savedPlaces.length;
                                 final remoteCheckins = placeP.remoteCheckinCount;
-                                final lifetime = placeP.lifetimeCheckinCount;
                                 final gamVisited = gamification.stats.placesVisited;
-                                final best = [local, remoteCheckins, lifetime, gamVisited]
+                                final best = [local, remoteCheckins, gamVisited]
                                     .reduce((a, b) => a > b ? a : b);
                                 return best;
                               }(),

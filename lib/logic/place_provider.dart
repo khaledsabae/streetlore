@@ -25,54 +25,12 @@ class PlaceProvider extends ChangeNotifier {
 
   int _remoteSavedCount = 0;
   int _remoteCheckinCount = 0;
-  /// v1.0.39: monotonic lifetime check-in count. Incremented only
-  /// on a successful check-in (never decremented on uncheck) and
-  /// persisted to SharedPreferences so it survives cold start.
-  /// Reconciled against the server count by `fetchRemoteCounts`
-  /// (which only ever raises it, never lowers it). The Profile
-  /// screen's "Explored" counter uses this so a check-in +
-  /// uncheck sequence still increments the achievement.
-  int _lifetimeCheckinCount = 0;
-  static const String _kLifetimeCheckinKey = 'lifetime_checkin_count_v1';
 
   int get remoteSavedCount => _remoteSavedCount;
   int get remoteCheckinCount => _remoteCheckinCount;
-  int get lifetimeCheckinCount => _lifetimeCheckinCount;
 
   PlaceProvider() {
     _loadSavedPlaces();
-    _loadLifetimeCheckin();
-  }
-
-  Future<void> _loadLifetimeCheckin() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final loaded = prefs.getInt(_kLifetimeCheckinKey) ?? 0;
-      // v1.0.40: race fix. The constructor is sync, this load is
-      // async - if the user checks in before this load finishes,
-      // bumpLocalCheckinCount has already raised
-      // _lifetimeCheckinCount and persisted the new value. We use
-      // MAX so we don't clobber that with a stale read. We only
-      // notifyListeners when we actually raise the value (i.e. the
-      // persisted value from a previous session is greater than
-      // what was live in memory) so we don't fire an extra rebuild
-      // for the in-session case where bump already raised it.
-      if (loaded > _lifetimeCheckinCount) {
-        _lifetimeCheckinCount = loaded;
-        notifyListeners();
-      }
-    } catch (e) {
-      debugPrint('PlaceProvider._loadLifetimeCheckin: $e');
-    }
-  }
-
-  Future<void> _saveLifetimeCheckin() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_kLifetimeCheckinKey, _lifetimeCheckinCount);
-    } catch (e) {
-      debugPrint('PlaceProvider._saveLifetimeCheckin: $e');
-    }
   }
 
   Future<void> fetchRemoteCounts(String userId) async {
@@ -90,60 +48,27 @@ class PlaceProvider extends ChangeNotifier {
           .select()
           .eq('user_id', userId)
           .count(CountOption.exact);
+      // v1.0.43: the EXPLORED counter is now driven ONLY by the
+      // live Supabase row count. There is no SharedPreferences
+      // mirror, no monotonic lifetime counter, no "optimistic
+      // bump" that the DB has to reconcile later. Every
+      // `fetchRemoteCounts(userId)` is a fresh server-authoritative
+      // count, so the Profile screen and the post-check-in
+      // recompute always converge.
       _remoteCheckinCount = checkinRes.count;
-      // v1.0.39: raise the monotonic lifetime if the server count
-      // is higher (e.g. user checked in from another device). Never
-      // lower it - the local counter is the source of truth.
-      if (checkinRes.count > _lifetimeCheckinCount) {
-        _lifetimeCheckinCount = checkinRes.count;
-        await _saveLifetimeCheckin();
-      }
 
-      debugPrint('Remote counts: saved=$_remoteSavedCount, checkins=$_remoteCheckinCount, lifetime=$_lifetimeCheckinCount');
+      debugPrint('Remote counts: saved=$_remoteSavedCount, checkins=$_remoteCheckinCount');
       notifyListeners();
     } catch (e) {
       debugPrint('fetchRemoteCounts error: $e');
     }
   }
 
-  /// Optimistic local increment of the remote check-in counter. The UI
-  /// must show the new total the INSTANT the user taps Check-in - we
-  /// cannot wait for `fetchRemoteCounts` to round-trip Supabase. The
-  /// counter will be reconciled by the follow-up `fetchRemoteCounts`
-  /// call the check-in screen fires right after this.
-  ///
-  /// v1.0.39: also bumps [lifetimeCheckinCount] and persists it to
-  /// SharedPreferences. The lifetime counter never decreases on
-  /// uncheck, so the Profile "Explored" digit only goes up.
-  void bumpLocalCheckinCount() {
-    _remoteCheckinCount += 1;
-    _lifetimeCheckinCount += 1;
-    _saveLifetimeCheckin();
-    notifyListeners();
-    debugPrint(
-      'PlaceProvider.bumpLocalCheckinCount -> '
-      'remote=$_remoteCheckinCount lifetime=$_lifetimeCheckinCount',
-    );
-  }
-
-  /// v1.0.38: optimistic local decrement of the remote check-in
-  /// counter (mirror of [bumpLocalCheckinCount] for the un-check
-  /// path). The UI flips back to "Check-in" the moment the user
-  /// taps the green Visited button; the follow-up
-  /// `fetchRemoteCounts` reconciles the persisted count once the
-  /// DELETE round-trip completes.
-  ///
-  /// v1.0.39: NO-OP for [lifetimeCheckinCount] - we keep the
-  /// achievement counter monotonic, so uncheck decrements only the
-  /// "currently active" count.
-  void unbumpLocalCheckinCount() {
-    if (_remoteCheckinCount > 0) _remoteCheckinCount -= 1;
-    notifyListeners();
-    debugPrint(
-      'PlaceProvider.unbumpLocalCheckinCount -> '
-      'remote=$_remoteCheckinCount lifetime=$_lifetimeCheckinCount',
-    );
-  }
+  /// v1.0.43: removed all optimistic-bump / lifetime caching.
+  /// After a check-in / un-check-in, the calling code MUST
+  /// `await placeProvider.fetchRemoteCounts(userId)` to refresh
+  /// the Profile / Explored digit from the actual server count.
+  /// There is no local "best guess" any more.
 
   /// Optimistic local increment of the remote saved-places counter. The
   /// UI updates immediately so the Profile screen never flashes 0 while

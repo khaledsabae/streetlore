@@ -118,27 +118,45 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build APK (arm64, release)
+      - name: Materialise dart-define JSON
         env:
           GEMINI_KEYS: ${{ secrets.GEMINI_API_KEYS }}
         run: |
           set -e
-          # Allow the keys to come from either the secret (preferred)
-          # or the fallback literal that the user has been pasting
-          # into the local build.
+          # v1.0.43 fix: previous builds used shell interpolation
+          # `--dart-define=GEMINI_API_KEYS="${GEMINI_KEYS}"` which
+          # silently broke when the secret value contained a `$`,
+          # `"`, `\` or `=` (the user confirmed the AI Tour Guide
+          # was returning "(Error: 404)" / no response at all in
+          # v1.0.42). We now write the value to a JSON file and
+          # pass it to flutter via `--dart-define-from-file`,
+          # which bypasses shell escaping entirely.
           if [ -z "${GEMINI_KEYS}" ]; then
             echo "::error::GEMINI_API_KEYS GitHub secret is missing. Add it (5 keys, comma-separated) and re-run."
             exit 1
           fi
           KEY_COUNT=$(echo "${GEMINI_KEYS}" | tr ',' '\n' | wc -l)
-          # Print only length + count - never echo the actual key
-          # text because GitHub Actions auto-masks anything that
-          # matches a secret value. From the log we can still tell
-          # whether the secret was populated.
           echo "GEMINI_API_KEYS loaded: ${#GEMINI_KEYS} chars, ${KEY_COUNT} comma-separated entries"
+          # Build a single-entry JSON map. JSON requires " -> \" and
+          # \ -> \\ inside string values; we use python for a clean
+          # escaping instead of fragile sed/awk pipelines.
+          python3 -c 'import json,sys; sys.stdout.write(json.dumps({"GEMINI_API_KEYS": sys.stdin.read().rstrip(chr(10))}))' <<<"${GEMINI_KEYS}" > /tmp/dart_defines.json
+          echo "Wrote $(wc -c < /tmp/dart_defines.json) bytes to /tmp/dart_defines.json"
+          # Sanity: the JSON should parse and contain the right
+          # number of comma-separated entries.
+          PARSED_COUNT=$(python3 -c 'import json,sys; print(len(json.load(open("/tmp/dart_defines.json"))["GEMINI_API_KEYS"].split(",")))')
+          if [ "${PARSED_COUNT}" -lt 1 ]; then
+            echo "::error::Parsed GEMINI_API_KEYS has 0 entries. Check the GitHub secret value."
+            exit 1
+          fi
+          echo "Parsed entries from JSON: ${PARSED_COUNT}"
+
+      - name: Build APK (arm64, release)
+        run: |
+          set -e
           flutter build apk --release \
             --target-platform android-arm64 \
-            --dart-define=GEMINI_API_KEYS="${GEMINI_KEYS}"
+            --dart-define-from-file=/tmp/dart_defines.json
 
       - name: Compute APK hashes
         id: hashes

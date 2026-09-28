@@ -19,14 +19,18 @@ class GeocodingResult {
   });
 }
 
-/// v1.0.42: thin wrapper around the public Nominatim
+/// v1.0.43: thin wrapper around the public Nominatim
 /// (OpenStreetMap) Search API.
 ///
 ///   GET https://nominatim.openstreetmap.org/search?
 ///       q={query}&format=json&limit=5&countrycodes=eg&bounded=1
 ///
-/// Nominatim requires a User-Agent header (no anonymous traffic);
-/// we send `streetlore/1.0.42` per the OSM tile usage policy.
+/// Nominatim blocks empty / browser-like User-Agents and (per the
+/// OSM usage policy) requires an identifying User-Agent that
+/// includes a contact channel. We send
+///   `streetlore/1.0.43 (https://github.com/mohamedsabae50-prog/streetlore; admin@streetlore.app)`
+/// which previously returned `[]` because the v1.0.42 UA lacked a
+/// reachable contact and got 403'd by the public instance.
 /// The viewbox is pinned to Alexandria so "Bank Misr ATM" returns
 /// the Stanley / San Stefano branch and not the one in Cairo.
 ///
@@ -37,7 +41,8 @@ class GeocodingService {
 
   static const String _endpoint =
       'https://nominatim.openstreetmap.org/search';
-  static const String _userAgent = 'streetlore/1.0.42 (https://github.com/mohamedsabae50-prog/streetlore)';
+  static const String _userAgent =
+      'streetlore/1.0.43 (https://github.com/mohamedsabae50-prog/streetlore; admin@streetlore.app)';
   static const Duration _timeout = Duration(seconds: 8);
 
   /// Alexandria bounding box - (minLon, minLat, maxLon, maxLat).
