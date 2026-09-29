@@ -36,45 +36,28 @@ class PlaceProvider extends ChangeNotifier {
   Future<void> fetchRemoteCounts(String userId) async {
     if (userId.isEmpty) return;
     try {
-      final savedRes = await _client
+      // هنجيب الـ id بس ونعدهم برمجياً عشان نتفادى مشاكل دالة count
+      final savedData = await _client
           .from('saved_places')
-          .select()
-          .eq('user_id', userId)
-          .count(CountOption.exact);
-      _remoteSavedCount = savedRes.count;
-
-      final checkinRes = await _client
+          .select('id')
+          .eq('user_id', userId);
+          
+      final checkinData = await _client
           .from('place_checkins')
-          .select()
-          .eq('user_id', userId)
-          .count(CountOption.exact);
-      
-      
-      
-      
-      
-      
-      
-      _remoteCheckinCount = checkinRes.count;
+          .select('id')
+          .eq('user_id', userId);
+
+      _remoteSavedCount = (savedData as List).length;
+      _remoteCheckinCount = (checkinData as List).length;
 
       debugPrint('Remote counts: saved=$_remoteSavedCount, checkins=$_remoteCheckinCount');
       notifyListeners();
     } catch (e) {
       debugPrint('fetchRemoteCounts error: $e');
     }
-    
   }
 
-  
-  
-  
-  
-  
 
-  
-  
-  
-  
   void bumpLocalSavedCount() {
     _remoteSavedCount += 1;
     notifyListeners();

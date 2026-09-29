@@ -10,7 +10,7 @@ class GeminiRestClient {
 
   static const Duration _timeout = Duration(seconds: 45);
 
-  static const List<String> _modelFallbackOrder = ['gemini-1.5-flash-latest'];
+  static const List<String> _modelFallbackOrder = [];
 
   static const int _friendlyFallbackStatus = 599;
 
