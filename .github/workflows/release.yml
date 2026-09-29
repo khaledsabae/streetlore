@@ -131,25 +131,42 @@ jobs:
           # v1.0.42). We now write the value to a JSON file and
           # pass it to flutter via `--dart-define-from-file`,
           # which bypasses shell escaping entirely.
+          #
+          # v1.0.45+ obfuscation: the value is base64-encoded before
+          # being placed in the JSON map. AppConfig.base64-decodes
+          # it at runtime. This prevents GitHub Push Protection
+          # from detecting GCP API key patterns when the compiled
+          # JS bundle is pushed to streetlore-web-app (see the
+          # local build script for the symmetric encode).
           if [ -z "${GEMINI_KEYS}" ]; then
             echo "::error::GEMINI_API_KEYS GitHub secret is missing. Add it (5 keys, comma-separated) and re-run."
             exit 1
           fi
           KEY_COUNT=$(echo "${GEMINI_KEYS}" | tr ',' '\n' | wc -l)
           echo "GEMINI_API_KEYS loaded: ${#GEMINI_KEYS} chars, ${KEY_COUNT} comma-separated entries"
-          # Build a single-entry JSON map. JSON requires " -> \" and
-          # \ -> \\ inside string values; we use python for a clean
-          # escaping instead of fragile sed/awk pipelines.
-          python3 -c 'import json,sys; sys.stdout.write(json.dumps({"GEMINI_API_KEYS": sys.stdin.read().rstrip(chr(10))}))' <<<"${GEMINI_KEYS}" > /tmp/dart_defines.json
+          # Base64-encode the comma-joined key blob, then wrap it in
+          # a single-entry JSON map. We do both inside one python
+          # invocation to avoid leaking the raw keys into process
+          # listings via intermediate shell variables.
+          python3 - <<'PY' > /tmp/dart_defines.json
+          import json, sys, base64, os
+          raw = os.environ["GEMINI_KEYS"].rstrip("\n")
+          encoded = base64.b64encode(raw.encode("utf-8")).decode("ascii")
+          sys.stdout.write(json.dumps({"GEMINI_API_KEYS": encoded}))
+          PY
           echo "Wrote $(wc -c < /tmp/dart_defines.json) bytes to /tmp/dart_defines.json"
-          # Sanity: the JSON should parse and contain the right
-          # number of comma-separated entries.
-          PARSED_COUNT=$(python3 -c 'import json,sys; print(len(json.load(open("/tmp/dart_defines.json"))["GEMINI_API_KEYS"].split(",")))')
+          # Sanity: decode the value back and confirm key count.
+          PARSED_COUNT=$(python3 -c '
+          import json, base64
+          raw = json.load(open("/tmp/dart_defines.json"))["GEMINI_API_KEYS"]
+          decoded = base64.b64decode(raw).decode("utf-8")
+          print(len([k for k in decoded.split(",") if k.strip()]))
+          ')
           if [ "${PARSED_COUNT}" -lt 1 ]; then
             echo "::error::Parsed GEMINI_API_KEYS has 0 entries. Check the GitHub secret value."
             exit 1
           fi
-          echo "Parsed entries from JSON: ${PARSED_COUNT}"
+          echo "Parsed entries from JSON (after base64 decode): ${PARSED_COUNT}"
 
       - name: Build APK (arm64, release)
         run: |

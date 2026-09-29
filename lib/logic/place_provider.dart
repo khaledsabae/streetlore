@@ -34,54 +34,48 @@ class PlaceProvider extends ChangeNotifier {
   }
 
   Future<void> fetchRemoteCounts(String userId) async {
-    if (userId.isEmpty) return;
+    // هنجيب الـ ID بتاع اليوزر من السيرفر مباشرة عشان نضمن إنه مش فاضي
+    final actualUserId = Supabase.instance.client.auth.currentUser?.id;
+    if (actualUserId == null || actualUserId.isEmpty) return;
+
     try {
-      // هنجيب الـ id بس ونعدهم برمجياً عشان نتفادى مشاكل دالة count
       final savedData = await _client
           .from('saved_places')
           .select('id')
-          .eq('user_id', userId);
-          
+          .eq('user_id', actualUserId);
+
       final checkinData = await _client
           .from('place_checkins')
           .select('id')
-          .eq('user_id', userId);
+          .eq('user_id', actualUserId);
 
       _remoteSavedCount = (savedData as List).length;
       _remoteCheckinCount = (checkinData as List).length;
 
-      debugPrint('Remote counts: saved=$_remoteSavedCount, checkins=$_remoteCheckinCount');
       notifyListeners();
     } catch (e) {
       debugPrint('fetchRemoteCounts error: $e');
     }
   }
 
-
   void bumpLocalSavedCount() {
     _remoteSavedCount += 1;
     notifyListeners();
-    debugPrint(
-      'PlaceProvider.bumpLocalSavedCount -> $_remoteSavedCount',
-    );
+    debugPrint('PlaceProvider.bumpLocalSavedCount -> $_remoteSavedCount');
   }
 
-  
-  
   void unbumpLocalSavedCount() {
     if (_remoteSavedCount > 0) _remoteSavedCount -= 1;
     notifyListeners();
-    debugPrint(
-      'PlaceProvider.unbumpLocalSavedCount -> $_remoteSavedCount',
-    );
+    debugPrint('PlaceProvider.unbumpLocalSavedCount -> $_remoteSavedCount');
   }
 
   bool _isFilterOpenNow = false;
   bool _isFilterCheapest = false;
   bool _isFilterNearest = false;
-  
+
   PriceLevel? _maxPriceLevel;
-  
+
   bool _onlyFree = false;
 
   bool get isFilterOpenNow => _isFilterOpenNow;
@@ -94,9 +88,6 @@ class PlaceProvider extends ChangeNotifier {
     if (_loading) return;
     if (!force && _places.isNotEmpty) return;
 
-    
-    
-    
     final cachedSeed = OfflineProvider.cachedFallback;
     if (cachedSeed.isNotEmpty && _places.isEmpty) {
       _places = cachedSeed;
@@ -115,10 +106,7 @@ class PlaceProvider extends ChangeNotifier {
       final list = (res as List<dynamic>)
           .map((e) => _placeFromSupabase(e as Map<String, dynamic>))
           .toList();
-      
-      
-      
-      
+
       final filtered = _filterInvalidCoords(list);
       if (filtered.length != list.length) {
         debugPrint(
@@ -128,13 +116,11 @@ class PlaceProvider extends ChangeNotifier {
         );
       }
       if (filtered.isEmpty) {
-        
-        
         _places = _places.isNotEmpty
             ? _places
             : (OfflineProvider.cachedFallback.isNotEmpty
-                ? OfflineProvider.cachedFallback
-                : List<PlaceModel>.from(fallbackPlaces));
+                  ? OfflineProvider.cachedFallback
+                  : List<PlaceModel>.from(fallbackPlaces));
         _error = null;
       } else {
         _places = filtered;
@@ -148,11 +134,9 @@ class PlaceProvider extends ChangeNotifier {
       } else if (_places.isEmpty) {
         _places = List<PlaceModel>.from(fallbackPlaces);
       }
-      
     } finally {
       _loading = false;
-      
-      
+
       mergeSeedHotels();
       notifyListeners();
     }
@@ -170,8 +154,7 @@ class PlaceProvider extends ChangeNotifier {
     for (final p in _places) {
       if (p.id == id) return p;
     }
-    
-    
+
     final cached = OfflineProvider.cachedFallback;
     for (final p in cached) {
       if (p.id == id) return p;
@@ -179,14 +162,8 @@ class PlaceProvider extends ChangeNotifier {
     return null;
   }
 
-  
-  
-  
   bool get hasPlaces => _places.isNotEmpty;
 
-  
-  
-  
   void mergeSeedHotels() {
     if (_places.isEmpty) return;
     final hotelSeeds = getSeedHotelPlaces();
@@ -211,15 +188,7 @@ class PlaceProvider extends ChangeNotifier {
 
   PlaceModel _placeFromSupabase(Map<String, dynamic> json) {
     final model = placeModelFromSupabaseRow(json);
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     if (!_hasValidCoords(model.lat, model.lng)) {
       debugPrint(
         'PlaceProvider._placeFromSupabase: filtered place '
@@ -230,12 +199,6 @@ class PlaceProvider extends ChangeNotifier {
     return model;
   }
 
-  
-  
-  
-  
-  
-  
   bool _hasValidCoords(double lat, double lng) {
     if (lat == 0.0 && lng == 0.0) return false;
     if (lat < 29.5 || lat > 31.5) return false;
@@ -243,10 +206,6 @@ class PlaceProvider extends ChangeNotifier {
     return true;
   }
 
-  
-  
-  
-  
   List<PlaceModel> _filterInvalidCoords(List<PlaceModel> input) {
     return input
         .where((p) => _hasValidCoords(p.lat, p.lng))
@@ -262,21 +221,11 @@ class PlaceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  
-  
-  
   Future<bool> bootstrapForUser(String userId) async {
     if (userId.isEmpty) return false;
-    debugPrint(
-      'PlaceProvider.bootstrapForUser: counting DB rows for $userId',
-    );
-    
-    
-    
-    
-    
-    final dbCounts = await SupabaseService.instance
-        .countUserRows(userId);
+    debugPrint('PlaceProvider.bootstrapForUser: counting DB rows for $userId');
+
+    final dbCounts = await SupabaseService.instance.countUserRows(userId);
     debugPrint(
       'PlaceProvider.bootstrapForUser: DB counts for $userId -> '
       'saved_places=${dbCounts.savedPlaces} '
@@ -284,10 +233,10 @@ class PlaceProvider extends ChangeNotifier {
     );
     final remote = await SupabaseService.instance.pullSavedPlaces(userId);
     final remoteIds = remote.map((p) => p.id).toSet();
-    
-    
-    final cleanLocal =
-        _savedPlaces.where((p) => !remoteIds.contains(p.id)).toList();
+
+    final cleanLocal = _savedPlaces
+        .where((p) => !remoteIds.contains(p.id))
+        .toList();
     final merged = [...remote, ...cleanLocal];
     if (merged.length != _savedPlaces.length ||
         !_listsSameIds(_savedPlaces, merged)) {
@@ -327,21 +276,14 @@ class PlaceProvider extends ChangeNotifier {
     }
     final savedData = _savedPlaces.map((p) => jsonEncode(p.toJson())).toList();
     await prefs.setStringList('saved_places_data', savedData);
-    
-    
-    
+
     if (wasSaved) {
       unbumpLocalSavedCount();
     } else {
       bumpLocalSavedCount();
     }
     notifyListeners();
-    
-    
-    
-    
-    
-    
+
     final userId = Supabase.instance.client.auth.currentUser?.id ?? '';
     if (userId.isNotEmpty) {
       try {
@@ -353,8 +295,7 @@ class PlaceProvider extends ChangeNotifier {
             'PlaceProvider.toggleSave: Supabase write returned false '
             'for userId=$userId placeId=${place.id} wasSaved=$wasSaved',
           );
-          
-          
+
           if (wasSaved) {
             bumpLocalSavedCount();
           } else {
@@ -366,15 +307,14 @@ class PlaceProvider extends ChangeNotifier {
             'placeId=${place.id} wasSaved=$wasSaved',
           );
         }
-        
-        
+
         notifyListeners();
       } catch (e, st) {
         debugPrint(
           'PlaceProvider.toggleSave: Supabase write threw for '
           'placeId=${place.id}: $e\n$st',
         );
-        
+
         if (wasSaved) {
           bumpLocalSavedCount();
         } else {
@@ -415,15 +355,12 @@ class PlaceProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  
-  
   void setMaxPriceLevel(PriceLevel? level) {
     _maxPriceLevel = level;
     _isFilterCheapest = level != null;
     notifyListeners();
   }
 
-  
   void toggleOnlyFree() {
     _onlyFree = !_onlyFree;
     _isFilterCheapest = _onlyFree || _maxPriceLevel != null;
@@ -470,8 +407,6 @@ class PlaceProvider extends ChangeNotifier {
     return result;
   }
 
-  
-  
   bool _isPlaceOpenNow(String openHours) {
     final clean = openHours.trim();
     if (clean.toLowerCase() == 'open 24 hours') return true;
@@ -490,7 +425,6 @@ class PlaceProvider extends ChangeNotifier {
     }
   }
 
-  
   int? _parseHourMin(String s) {
     final upper = s.toUpperCase();
     final isPm = upper.contains('PM');
@@ -507,14 +441,6 @@ class PlaceProvider extends ChangeNotifier {
     return hour * 60 + m;
   }
 }
-
-
-
-
-
-
-
-
 
 PlaceModel placeModelFromSupabaseRow(Map<String, dynamic> json) {
   return PlaceModel(

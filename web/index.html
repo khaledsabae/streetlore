@@ -1,10 +1,18 @@
 <!DOCTYPE html>
 <html>
-<head>  
-<base href="/streetlore-web-app/">
+<head>
+  <!--
+    Base href placeholder. Replaced by --base-href at build time.
+    v1.0.45: Flutter 3.44+ requires the literal "$FLUTTER_BASE_HREF"
+    placeholder; a hardcoded path (e.g. "/streetlore-web-app/") causes
+    `flutter build web --release --base-href ...` to fail with
+    "Couldn't find the placeholder for base href".
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Discover the unseen stories of your city with Streetlore.">
 
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -17,7 +25,6 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
