@@ -47,7 +47,7 @@ class AppConfig {
     }
   }
 
-  static const String geminiModel = 'gemini-2.8-flash';
+  static const String geminiModel = 'gemini-3.8-flash';
   static const bool geminiEnabled = true;
   static const bool newFeaturesEnabled = true;
   static const int defaultGeofenceRadius = 500;

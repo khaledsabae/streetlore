@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/animations/app_animations.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
-import '../../core/widgets/animated_counter.dart';
 import '../../core/widgets/animated_icons.dart';
 import '../../core/widgets/confetti_overlay.dart';
 import '../../logic/place_provider.dart';
@@ -1131,9 +1130,8 @@ class _Stat extends StatelessWidget {
         children: [
           Icon(icon, color: Colors.white70, size: 18),
           const SizedBox(height: 4),
-          AnimatedCounter(
-            value: numericValue ?? 0,
-            duration: const Duration(milliseconds: 1200),
+          Text(
+            (numericValue ?? 0).toString(),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
