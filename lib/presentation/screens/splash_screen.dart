@@ -61,7 +61,7 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 600),
     );
 
-    Future.delayed(const Duration(milliseconds: 3200), _exitThenNavigate);
+    Future.delayed(const Duration(milliseconds: 5000), _exitThenNavigate);
   }
 
   @override
@@ -122,12 +122,12 @@ class _SplashScreenState extends State<SplashScreen>
                     children: [
                       FadeTransition(
                         opacity: _logoFade,
-                        child: const CompassBrand(
-                          size: 320,
-                          showOrbitingLetters: true,
-                          spin: true,
-                          spinDuration: Duration(seconds: 14),
-                          letterDuration: Duration(seconds: 8),
+                        child: const CompassBrandIntro(
+                          size: 280,
+                          totalDuration: Duration(milliseconds: 4200),
+                          loop: false,
+                          spinCompass: true,
+                          compassSpinDuration: Duration(seconds: 18),
                         ),
                       ),
                       const SizedBox(height: 24),

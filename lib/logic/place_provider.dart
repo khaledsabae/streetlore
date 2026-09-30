@@ -460,6 +460,15 @@ class PlaceProvider extends ChangeNotifier {
 }
 
 PlaceModel placeModelFromSupabaseRow(Map<String, dynamic> json) {
+  final urlsRaw = json['image_urls'];
+  List<String> urls = const <String>[];
+  if (urlsRaw is List) {
+    urls = urlsRaw
+        .where((e) => e != null)
+        .map((e) => e.toString().trim())
+        .where((s) => s.isNotEmpty)
+        .toList(growable: false);
+  }
   return PlaceModel(
     id: (json['id'] ?? '').toString(),
     name: (json['name'] ?? '').toString(),
@@ -467,6 +476,7 @@ PlaceModel placeModelFromSupabaseRow(Map<String, dynamic> json) {
     description: (json['description'] ?? '').toString(),
     descriptionAr: json['description_ar']?.toString(),
     imageUrl: (json['image_url'] ?? '').toString(),
+    imageUrls: urls,
     rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
     category: (json['category'] ?? 'General').toString(),
     categoryAr: json['category_ar']?.toString(),

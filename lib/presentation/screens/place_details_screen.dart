@@ -18,6 +18,7 @@ import '../../logic/offline_provider.dart';
 import '../../data/models/review_model.dart';
 import '../../l10n/app_strings.dart';
 import '../widgets/add_review_sheet.dart';
+import '../widgets/place_image_carousel.dart';
 import '../widgets/place_photos_section.dart';
 import 'ai_tour_guide_screen.dart';
 import 'live_chat_screen.dart';
@@ -232,12 +233,21 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                 child: (toHeroContext.widget as Hero).child,
                               );
                             },
-                        child: ShimmerImage(
-                          imageUrl: place.imageUrl,
+                        child: PlaceImageCarousel(
+                          images: place.officialImages,
+                          height: double.infinity,
                           fit: BoxFit.cover,
-                          fallbackIcon: Icons.broken_image_rounded,
-                          fallbackColor: Colors.white38,
-                          fallbackIconSize: 60,
+                          heroTag: 'place-image-${place.id}',
+                          errorWidget: Container(
+                            color: Colors.white12,
+                            child: const Center(
+                              child: Icon(
+                                Icons.broken_image_rounded,
+                                color: Colors.white38,
+                                size: 60,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                       Container(

@@ -39,6 +39,7 @@ class PlaceModel {
   final String description;
   final String? descriptionAr;
   final String imageUrl;
+  final List<String> imageUrls;
   final double rating;
   final String category;
   final String? categoryAr;
@@ -77,6 +78,7 @@ class PlaceModel {
     required this.description,
     this.descriptionAr,
     required this.imageUrl,
+    this.imageUrls = const <String>[],
     required this.rating,
     this.category = 'General',
     this.categoryAr,
@@ -116,6 +118,22 @@ class PlaceModel {
 
   bool get hasDualPrice => priceLocalEgp != null && priceForeignerEgp != null;
 
+  /// All official images for this place, in display order.
+  /// Falls back to [imageUrl] when [imageUrls] is empty (so older rows
+  /// or pre-migration places still render correctly).
+  List<String> get officialImages {
+    final list = <String>[];
+    for (final u in imageUrls) {
+      if (u.isNotEmpty) list.add(u);
+    }
+    if (list.isEmpty && imageUrl.isNotEmpty) list.add(imageUrl);
+    return list;
+  }
+
+  String get primaryImage => officialImages.isNotEmpty
+      ? officialImages.first
+      : imageUrl;
+
   factory PlaceModel.fromJson(Map<String, dynamic> json) {
     Map<String, int>? bestTimeOverride;
     final raw = json['best_time_override'];
@@ -123,6 +141,15 @@ class PlaceModel {
       bestTimeOverride = raw.map(
         (k, v) => MapEntry(k.toString(), (v as num).toInt()),
       );
+    }
+    final urlsRaw = json['image_urls'] ?? json['imageUrls'];
+    List<String> urls = const <String>[];
+    if (urlsRaw is List) {
+      urls = urlsRaw
+          .where((e) => e != null)
+          .map((e) => e.toString().trim())
+          .where((s) => s.isNotEmpty)
+          .toList(growable: false);
     }
     return PlaceModel(
       id: json['id'] as String,
@@ -132,6 +159,7 @@ class PlaceModel {
       descriptionAr:
           json['description_ar'] as String? ?? json['descriptionAr'] as String?,
       imageUrl: json['imageUrl'] as String,
+      imageUrls: urls,
       rating: (json['rating'] as num).toDouble(),
       category: json['category'] as String? ?? 'General',
       categoryAr: json['category_ar'] as String? ?? json['categoryAr'] as String?,
