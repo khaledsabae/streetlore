@@ -516,6 +516,20 @@ class AppStrings {
     },
     'tour_start_nav': {'en': 'Start Navigation', 'ar': 'ابدأ التنقل'},
     'tour_locations_count': {'en': '{n} locations', 'ar': '{n} موقع'},
+    'tour_mark_visited': {'en': 'Mark as Visited', 'ar': 'سجّل الزيارة'},
+    'tour_visited': {'en': 'Visited', 'ar': 'تمت الزيارة'},
+    'tour_visit_recorded': {
+      'en': 'Tour marked as visited. The Tours counter on your profile just increased.',
+      'ar': 'تم تسجيل الجولة كزيارة. عداد الجولات في ملفك الشخصي زاد للتو.',
+    },
+    'tour_visit_unmarked': {
+      'en': 'Visit removed.',
+      'ar': 'تمت إزالة الزيارة.',
+    },
+    'tour_visit_offline': {
+      'en': "You're offline — will sync the visit when connection returns.",
+      'ar': 'أنت غير متصل — ستتم المزامنة عند عودة الاتصال.',
+    },
 
     'journal_add_memory': {'en': 'Add memory', 'ar': 'أضف ذكرى'},
     'journal_empty_title': {

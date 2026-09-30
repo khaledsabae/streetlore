@@ -322,7 +322,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                             _Stat(
                               label: context.tr('prof_tours'),
-                              numericValue: tourP.savedTours.length,
+                              numericValue: tourP.visitedTourIds.length,
                               icon: Icons.map_rounded,
                               delayMs: 440,
                             ),

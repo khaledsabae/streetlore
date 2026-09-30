@@ -22,8 +22,14 @@ class TourProvider extends ChangeNotifier {
   List<ItineraryModel> _savedTours = [];
   List<ItineraryModel> get savedTours => _savedTours;
 
+  Set<String> _visitedTourIds = <String>{};
+  Set<String> get visitedTourIds => Set<String>.unmodifiable(_visitedTourIds);
+  int get visitedToursCount => _visitedTourIds.length;
+  bool isTourVisited(String tourId) => _visitedTourIds.contains(tourId);
+
   TourProvider() {
     _loadSavedTours();
+    _loadVisitedTourIds();
   }
 
   Future<void> loadTours({bool force = false}) async {
@@ -147,6 +153,56 @@ class TourProvider extends ChangeNotifier {
     await prefs.setString('saved_tours_data', encodedList);
   }
 
+  Future<void> _loadVisitedTourIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList('visited_tour_ids') ?? const <String>[];
+    _visitedTourIds = raw.toSet();
+    notifyListeners();
+  }
+
+  Future<void> _persistVisitedTourIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList('visited_tour_ids', _visitedTourIds.toList());
+  }
+
+  Future<({bool ok})> markTourVisited(
+    ItineraryModel tour,
+    String userId,
+  ) async {
+    if (_visitedTourIds.contains(tour.id)) {
+      return (ok: true);
+    }
+    _visitedTourIds.add(tour.id);
+    notifyListeners();
+    await _persistVisitedTourIds();
+
+    if (userId.isEmpty) {
+      return (ok: true);
+    }
+
+    bool allOk = true;
+    for (final p in tour.places) {
+      if (p.id.isEmpty) continue;
+      try {
+        final res = await SupabaseService.instance.registerCheckin(
+          userId,
+          p.id,
+        );
+        if (!res.ok) allOk = false;
+      } catch (_) {
+        allOk = false;
+      }
+    }
+    return (ok: allOk);
+  }
+
+  Future<void> unmarkTourVisited(String tourId) async {
+    if (!_visitedTourIds.contains(tourId)) return;
+    _visitedTourIds.remove(tourId);
+    notifyListeners();
+    await _persistVisitedTourIds();
+  }
+
   
   
   Future<bool> bootstrapForUser(String userId) async {
@@ -156,26 +212,69 @@ class TourProvider extends ChangeNotifier {
       debugPrint(
         'TourProvider: no remote saved tours for $userId, keeping local',
       );
-      return false;
+    } else {
+      final remote = <ItineraryModel>[];
+      for (final m in remoteMaps) {
+        try {
+          remote.add(ItineraryModel.fromJson(m));
+        } catch (_) {}
+      }
+      final remoteIds = remote.map((t) => t.id).toSet();
+      final localOnly =
+          _savedTours.where((t) => !remoteIds.contains(t.id)).toList();
+      final merged = [...remote, ...localOnly];
+      _savedTours = merged;
+      await _saveToursToStorage();
+      notifyListeners();
+      debugPrint(
+        'TourProvider: pulled ${remote.length} saved tours for $userId '
+        '(total now ${merged.length})',
+      );
     }
-    final remote = <ItineraryModel>[];
-    for (final m in remoteMaps) {
+
+    await _syncVisitedFromCheckins(userId);
+    return true;
+  }
+
+  Future<void> _syncVisitedFromCheckins(String userId) async {
+    if (_tours.isEmpty) {
       try {
-        remote.add(ItineraryModel.fromJson(m));
+        await loadTours();
       } catch (_) {}
     }
-    final remoteIds = remote.map((t) => t.id).toSet();
-    final localOnly =
-        _savedTours.where((t) => !remoteIds.contains(t.id)).toList();
-    final merged = [...remote, ...localOnly];
-    _savedTours = merged;
-    await _saveToursToStorage();
-    notifyListeners();
-    debugPrint(
-      'TourProvider: pulled ${remote.length} saved tours for $userId '
-      '(total now ${merged.length})',
-    );
-    return true;
+    if (_tours.isEmpty) return;
+
+    try {
+      final res = await _client
+          .from('place_checkins')
+          .select('place_id')
+          .eq('user_id', userId);
+      final checkedInPlaceIds = (res as List)
+          .map((e) => (e as Map<String, dynamic>)['place_id'] as String?)
+          .whereType<String>()
+          .toSet();
+
+      bool changed = false;
+      for (final tour in _tours) {
+        if (tour.places.isEmpty) continue;
+        final allCheckedIn =
+            tour.places.every((p) => checkedInPlaceIds.contains(p.id));
+        if (allCheckedIn && !_visitedTourIds.contains(tour.id)) {
+          _visitedTourIds.add(tour.id);
+          changed = true;
+        }
+      }
+      if (changed) {
+        await _persistVisitedTourIds();
+        notifyListeners();
+        debugPrint(
+          'TourProvider: synced visited tours from place_checkins -> '
+          '${_visitedTourIds.length} visited',
+        );
+      }
+    } catch (e) {
+      debugPrint('TourProvider._syncVisitedFromCheckins error: $e');
+    }
   }
 
   void toggleTourSaved(ItineraryModel tour) {

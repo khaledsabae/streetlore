@@ -2,13 +2,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../data/models/itinerary_model.dart';
 import '../../l10n/app_strings.dart';
+import '../../logic/auth_provider.dart';
 import '../../logic/tour_provider.dart';
 import '../widgets/place_card.dart';
+import 'map_screen.dart';
 import 'place_details_screen.dart';
 
 class TourDetailsScreen extends StatefulWidget {
@@ -53,20 +54,55 @@ class _TourDetailsScreenState extends State<TourDetailsScreen>
 
   Future<void> _startNavigation() async {
     final tour = widget.tour;
-    if (tour.places.isNotEmpty) {
-      final firstPlace = tour.places.first;
-      final url = Uri.parse(
-        'https://www.google.com/maps/dir/?api=1&destination=${firstPlace.lat},${firstPlace.lng}',
-      );
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      }
-    } else {
+    if (tour.places.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.tr('tour_no_locations'))),
         );
       }
+      return;
+    }
+    final firstPlace = tour.places.first;
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MapScreen(
+          destinationLat: firstPlace.lat,
+          destinationLng: firstPlace.lng,
+          placeName: firstPlace.name,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _toggleVisited() async {
+    final tour = widget.tour;
+    final tourProvider = context.read<TourProvider>();
+    final userId = context.read<AuthProvider>().userId;
+    final wasVisited = tourProvider.isTourVisited(tour.id);
+
+    HapticFeedback.mediumImpact();
+    if (wasVisited) {
+      await tourProvider.unmarkTourVisited(tour.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('tour_visit_unmarked'))),
+      );
+      return;
+    }
+
+    final messenger = ScaffoldMessenger.of(context);
+    final ok = await tourProvider.markTourVisited(tour, userId);
+    if (!mounted) return;
+    if (ok.ok) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(context.tr('tour_visit_recorded'))),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(content: Text(context.tr('tour_visit_offline'))),
+      );
     }
   }
 
@@ -437,8 +473,12 @@ class _TourDetailsScreenState extends State<TourDetailsScreen>
                       ],
 
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
+                        padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
                         child: _buildStartButton(),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                        child: _buildVisitedButton(),
                       ),
                     ],
                   ),
@@ -477,6 +517,56 @@ class _TourDetailsScreenState extends State<TourDetailsScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildVisitedButton() {
+    return Consumer<TourProvider>(
+      builder: (context, tourProvider, _) {
+        final visited = tourProvider.isTourVisited(widget.tour.id);
+        final color = visited
+            ? AppColors.success
+            : AppColors.primary.withValues(alpha: 0.6);
+        final iconData = visited
+            ? Icons.check_circle_rounded
+            : Icons.radio_button_unchecked_rounded;
+        final label = visited
+            ? context.tr('tour_visited')
+            : context.tr('tour_mark_visited');
+
+        return GestureDetector(
+          onTap: _toggleVisited,
+          child: Container(
+            width: double.infinity,
+            height: 52,
+            decoration: BoxDecoration(
+              color: visited
+                  ? color.withValues(alpha: 0.18)
+                  : Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: visited
+                    ? color
+                    : Colors.white.withValues(alpha: 0.18),
+                width: visited ? 1.5 : 1.0,
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(iconData, color: color, size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: AppTextStyles.buttonText.copyWith(
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
