@@ -34,27 +34,44 @@ class PlaceProvider extends ChangeNotifier {
   }
 
   Future<void> fetchRemoteCounts(String userId) async {
-    // هنجيب الـ ID بتاع اليوزر من السيرفر مباشرة عشان نضمن إنه مش فاضي
-    final actualUserId = Supabase.instance.client.auth.currentUser?.id;
-    if (actualUserId == null || actualUserId.isEmpty) return;
+    final effectiveUserId = userId.isNotEmpty
+        ? userId
+        : (Supabase.instance.client.auth.currentUser?.id ?? '');
+    if (effectiveUserId.isEmpty) {
+      debugPrint(
+        'PlaceProvider.fetchRemoteCounts: no userId available '
+        '(param empty and Supabase.currentUser null), skipping',
+      );
+      return;
+    }
 
     try {
-      final savedData = await _client
+      final savedRes = await _client
           .from('saved_places')
-          .select('id')
-          .eq('user_id', actualUserId);
+          .select('user_id')
+          .eq('user_id', effectiveUserId)
+          .count();
+      _remoteSavedCount =
+          (savedRes as dynamic).count as int? ?? 0;
 
-      final checkinData = await _client
+      final checkinRes = await _client
           .from('place_checkins')
-          .select('id')
-          .eq('user_id', actualUserId);
+          .select('user_id')
+          .eq('user_id', effectiveUserId)
+          .count();
+      _remoteCheckinCount =
+          (checkinRes as dynamic).count as int? ?? 0;
 
-      _remoteSavedCount = (savedData as List).length;
-      _remoteCheckinCount = (checkinData as List).length;
+      debugPrint(
+        'PlaceProvider.fetchRemoteCounts: user=$effectiveUserId '
+        'saved=$_remoteSavedCount checkins=$_remoteCheckinCount',
+      );
 
       notifyListeners();
-    } catch (e) {
-      debugPrint('fetchRemoteCounts error: $e');
+    } catch (e, st) {
+      debugPrint(
+        'PlaceProvider.fetchRemoteCounts: error for user=$effectiveUserId: $e\n$st',
+      );
     }
   }
 
