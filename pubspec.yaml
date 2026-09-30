@@ -47,6 +47,8 @@ flutter:
   generate: true
   assets:
     - assets/logo/streetlore_logo.png
+    - assets/images/splash_logo.png
+    - assets/images/compass_only.png
   fonts:
     - family: Cairo
       fonts:

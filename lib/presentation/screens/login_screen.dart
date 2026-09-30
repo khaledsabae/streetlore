@@ -8,6 +8,7 @@ import '../../core/config/app_config.dart';
 import '../../core/constants/app_colors.dart';
 import '../../l10n/app_strings.dart';
 import '../../logic/auth_provider.dart';
+import '../widgets/compass_brand.dart';
 import 'main_navigation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
@@ -176,33 +177,12 @@ class _LoginScreenState extends State<LoginScreen>
                     Center(
                       child: PopIn(
                         duration: const Duration(milliseconds: 700),
-                        child: Container(
-                          
-                          
-                          
-                          width: 200,
-                          height: 200,
-                          decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
-                            borderRadius: BorderRadius.circular(36),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.4),
-                                blurRadius: 32,
-                                offset: const Offset(0, 14),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(36),
-                            child: Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Image.asset(
-                                'assets/logo/streetlore_logo.png',
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
+                        child: const CompassBrand(
+                          size: 220,
+                          showOrbitingLetters: true,
+                          spin: true,
+                          spinDuration: Duration(seconds: 16),
+                          letterDuration: Duration(seconds: 9),
                         ),
                       ),
                     ),
