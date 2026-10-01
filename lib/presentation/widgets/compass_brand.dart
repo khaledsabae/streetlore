@@ -70,7 +70,8 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
     final imageWidth = widget.size;
     final imageHeight = imageWidth * _imageAspect;
     // Reserve vertical space below the image for the final assembled line.
-    final bottomReserve = widget.size * 0.22;
+    // Bigger reserve so letters at the bottom of the orbit stay visible.
+    final bottomReserve = widget.size * 0.34;
     final totalHeight = imageHeight + bottomReserve;
 
     return AnimatedBuilder(
@@ -147,12 +148,14 @@ class _LettersPainter extends CustomPainter {
     final fadeIn = (progress / 0.22).clamp(0.0, 1.0);
     if (fadeIn <= 0) return;
 
-    // Orbit center sits at the visual center of the compass image.
-    // The compass is roughly a circle that fills the image height, so its
-    // visual radius is imageHeight/2. We add 25 px of padding so the
-    // orbiting letters float clearly outside the compass edge.
+    // Orbit center sits at the visual center of the compass image. The
+    // compass is roughly a circle that fills the image height, so its
+    // visual radius is imageHeight/2. We add 35 px of padding so the
+    // orbiting letters float clearly outside the compass edge. The orbit
+    // is dynamic so brief clipping at the top/bottom of the orbit cycle
+    // is barely noticeable.
     final orbitCenter = Offset(size.width / 2, imageHeight / 2);
-    final orbitRadius = (imageHeight / 2) + 25;
+    final orbitRadius = (imageHeight / 2) + 35;
 
     // Final assembled-line position (below the compass image).
     final finalY = imageHeight + size.width * 0.13;

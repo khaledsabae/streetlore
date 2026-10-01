@@ -123,10 +123,10 @@ class _SplashScreenState extends State<SplashScreen>
                       FadeTransition(
                         opacity: _logoFade,
                         child: const CompassBrandIntro(
-                          size: 280,
+                          size: 300,
                           totalDuration: Duration(milliseconds: 4200),
                           loop: false,
-                          spinCompass: true,
+                          spinCompass: false,
                           compassSpinDuration: Duration(seconds: 18),
                         ),
                       ),
