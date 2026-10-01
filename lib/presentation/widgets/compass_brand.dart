@@ -38,9 +38,13 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
   late final AnimationController _compassSpinCtrl;
 
   // Aspect ratio of the cropped compass image (660 wide x 486 tall,
-  // transparent PNG). The orbit radius is computed from the width so the
-  // letters float ~25 px further out than the compass edge.
+  // transparent PNG).
   static const double _imageAspect = 486 / 660;
+
+  // The compass image is rendered at this fraction of the widget width so
+  // there's transparent padding around it for the orbiting letters and the
+  // final assembled line.
+  static const double _compassScale = 0.70;
 
   @override
   void initState() {
@@ -67,12 +71,25 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
 
   @override
   Widget build(BuildContext context) {
-    final imageWidth = widget.size;
-    final imageHeight = imageWidth * _imageAspect;
-    // Reserve vertical space below the image for the final assembled line.
-    // Bigger reserve so letters at the bottom of the orbit stay visible.
-    final bottomReserve = widget.size * 0.34;
-    final totalHeight = imageHeight + bottomReserve;
+    final compassWidth = widget.size * _compassScale;
+    final compassHeight = compassWidth * _imageAspect;
+    // The orbit radius is the compass's visual radius plus 30 px of
+    // padding so the letters float clearly outside the compass body.
+    final compassRadius = compassHeight / 2;
+    final orbitRadius = compassRadius + 30;
+
+    // The widget height needs to be enough to fit:
+    //   cream padding above compass (= orbitRadius so the top letter is visible)
+    //   compass itself
+    //   cream padding below compass (= orbitRadius so the bottom letter is visible)
+    //   + a strip at the bottom for the final assembled line (~50 px)
+    final totalHeight = (2 * orbitRadius + compassHeight + 60)
+        .clamp(340.0, double.infinity);
+
+    // Compass is centered vertically inside the widget so the orbit has
+    // equal cream space above and below.
+    final compassTop = (totalHeight - compassHeight) / 2;
+    final compassCenterY = compassTop + compassHeight / 2;
 
     return AnimatedBuilder(
       animation: Listenable.merge([_ctrl, _compassSpinCtrl]),
@@ -85,24 +102,24 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
             children: [
               if (widget.spinCompass)
                 Positioned(
-                  top: 0,
+                  top: compassTop,
                   child: RotationTransition(
                     turns: _compassSpinCtrl,
                     child: Image.asset(
                       'assets/images/compass_only.png',
-                      width: imageWidth,
-                      height: imageHeight,
+                      width: compassWidth,
+                      height: compassHeight,
                       fit: BoxFit.contain,
                     ),
                   ),
                 )
               else
                 Positioned(
-                  top: 0,
+                  top: compassTop,
                   child: Image.asset(
                     'assets/images/compass_only.png',
-                    width: imageWidth,
-                    height: imageHeight,
+                    width: compassWidth,
+                    height: compassHeight,
                     fit: BoxFit.contain,
                   ),
                 ),
@@ -110,7 +127,9 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
                 size: Size(widget.size, totalHeight),
                 painter: _LettersPainter(
                   progress: _ctrl.value,
-                  imageHeight: imageHeight,
+                  orbitCenter: Offset(widget.size / 2, compassCenterY),
+                  orbitRadius: orbitRadius,
+                  totalHeight: totalHeight,
                 ),
               ),
             ],
@@ -123,12 +142,20 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
 
 class _LettersPainter extends CustomPainter {
   final double progress;
-  final double imageHeight;
+  final Offset orbitCenter;
+  final double orbitRadius;
+  final double totalHeight;
 
   static const String _text = 'STREETLORE';
   static const Color _color = Color(0xFF1F3A5F);
+  static const double _letterFontSize = 22;
 
-  _LettersPainter({required this.progress, required this.imageHeight});
+  _LettersPainter({
+    required this.progress,
+    required this.orbitCenter,
+    required this.orbitRadius,
+    required this.totalHeight,
+  });
 
   static double _normalizeAngle(double a) {
     while (a > math.pi) {
@@ -148,17 +175,10 @@ class _LettersPainter extends CustomPainter {
     final fadeIn = (progress / 0.22).clamp(0.0, 1.0);
     if (fadeIn <= 0) return;
 
-    // Orbit center sits at the visual center of the compass image. The
-    // compass is roughly a circle that fills the image height, so its
-    // visual radius is imageHeight/2. We add 35 px of padding so the
-    // orbiting letters float clearly outside the compass edge. The orbit
-    // is dynamic so brief clipping at the top/bottom of the orbit cycle
-    // is barely noticeable.
-    final orbitCenter = Offset(size.width / 2, imageHeight / 2);
-    final orbitRadius = (imageHeight / 2) + 35;
-
-    // Final assembled-line position (below the compass image).
-    final finalY = imageHeight + size.width * 0.13;
+    // Final assembled-line position: ~32 px from the bottom of the widget,
+    // safely below the orbit bottom letter (which sits at orbitCenter.dy +
+    // orbitRadius).
+    final finalY = totalHeight - 32;
     final letterSpacing = size.width * 0.92 / (n - 1);
     final firstX = (size.width - letterSpacing * (n - 1)) / 2;
 
@@ -214,7 +234,7 @@ class _LettersPainter extends CustomPainter {
           text: _text[i],
           style: TextStyle(
             color: _color.withValues(alpha: fadeIn),
-            fontSize: 22,
+            fontSize: _letterFontSize,
             fontWeight: FontWeight.w700,
             letterSpacing: 2.2,
             fontFamily: 'serif',
@@ -230,5 +250,8 @@ class _LettersPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LettersPainter old) =>
-      old.progress != progress || old.imageHeight != imageHeight;
+      old.progress != progress ||
+      old.orbitCenter != orbitCenter ||
+      old.orbitRadius != orbitRadius ||
+      old.totalHeight != totalHeight;
 }
