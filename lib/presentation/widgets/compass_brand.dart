@@ -42,9 +42,10 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
   static const double _imageAspect = 486 / 660;
 
   // The compass image is rendered at this fraction of the widget width so
-  // there's transparent padding around it for the orbiting letters and the
-  // final assembled line.
-  static const double _compassScale = 0.70;
+  // there's generous transparent padding around it for the orbiting letters
+  // and the final assembled line. Smaller ratio = more clearance for the
+  // orbit but a smaller compass on screen.
+  static const double _compassScale = 0.58;
 
   @override
   void initState() {
@@ -73,18 +74,17 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
   Widget build(BuildContext context) {
     final compassWidth = widget.size * _compassScale;
     final compassHeight = compassWidth * _imageAspect;
-    // The orbit radius is the compass's visual radius plus 30 px of
-    // padding so the letters float clearly outside the compass body.
+    // The orbit radius is the compass's visual radius plus a small padding
+    // so the letters float clearly outside the compass body.
     final compassRadius = compassHeight / 2;
-    final orbitRadius = compassRadius + 30;
+    final orbitRadius = compassRadius + 22;
 
-    // The widget height needs to be enough to fit:
-    //   cream padding above compass (= orbitRadius so the top letter is visible)
-    //   compass itself
-    //   cream padding below compass (= orbitRadius so the bottom letter is visible)
-    //   + a strip at the bottom for the final assembled line (~50 px)
-    final totalHeight = (2 * orbitRadius + compassHeight + 60)
-        .clamp(340.0, double.infinity);
+    // The widget height is sized exactly to fit:
+    //   compass + cream above (orbitRadius) + cream below (orbitRadius) +
+    //   bottom strip for the final line. No clamp - the widget takes only
+    // the space it needs so the parent Column never overflows.
+    final totalHeight =
+        compassHeight + 2 * orbitRadius + 40;
 
     // Compass is centered vertically inside the widget so the orbit has
     // equal cream space above and below.

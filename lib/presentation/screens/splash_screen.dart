@@ -117,50 +117,54 @@ class _SplashScreenState extends State<SplashScreen>
             child: Stack(
               children: [
                 Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      FadeTransition(
-                        opacity: _logoFade,
-                        child: const CompassBrandIntro(
-                          size: 300,
-                          totalDuration: Duration(milliseconds: 4200),
-                          loop: false,
-                          spinCompass: false,
-                          compassSpinDuration: Duration(seconds: 18),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      FadeTransition(
-                        opacity: _taglineFade,
-                        child: SlideTransition(
-                          position: _taglineSlide,
-                          child: const Column(
-                            children: [
-                              Text(
-                                'Discover the unseen',
-                                style: TextStyle(
-                                  color: _letterColor,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: 1.0,
-                                ),
-                              ),
-                              SizedBox(height: 6),
-                              Text(
-                                'Stories of Alexandria',
-                                style: TextStyle(
-                                  color: Color(0xFF8C7B5E),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w400,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ],
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        FadeTransition(
+                          opacity: _logoFade,
+                          child: const CompassBrandIntro(
+                            size: 240,
+                            totalDuration: Duration(milliseconds: 4200),
+                            loop: false,
+                            spinCompass: false,
+                            compassSpinDuration: Duration(seconds: 18),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+                        FadeTransition(
+                          opacity: _taglineFade,
+                          child: SlideTransition(
+                            position: _taglineSlide,
+                            child: const Column(
+                              children: [
+                                Text(
+                                  'Discover the unseen',
+                                  style: TextStyle(
+                                    color: _letterColor,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  'Stories of Alexandria',
+                                  style: TextStyle(
+                                    color: Color(0xFF8C7B5E),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                    letterSpacing: 0.8,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Positioned(
