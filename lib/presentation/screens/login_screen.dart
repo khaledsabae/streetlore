@@ -178,10 +178,10 @@ class _LoginScreenState extends State<LoginScreen>
                       child: PopIn(
                         duration: const Duration(milliseconds: 700),
                         child: const CompassBrandIntro(
-                          size: 200,
+                          size: 220,
                           totalDuration: Duration(milliseconds: 4200),
-                          loop: false,
-                          spinCompass: false,
+                          loop: true,
+                          spinCompass: true,
                           compassSpinDuration: Duration(seconds: 16),
                         ),
                       ),

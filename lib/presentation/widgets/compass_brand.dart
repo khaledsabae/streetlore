@@ -84,7 +84,7 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
     //   bottom strip for the final line. No clamp - the widget takes only
     // the space it needs so the parent Column never overflows.
     final totalHeight =
-        compassHeight + 2 * orbitRadius + 40;
+        compassHeight + 2 * orbitRadius + 60;
 
     // Compass is centered vertically inside the widget so the orbit has
     // equal cream space above and below.

@@ -32,8 +32,6 @@ class ShimmerImage extends StatelessWidget {
       fallbackIcon: fallbackIcon,
       fallbackColor: fallbackColor,
       fallbackIconSize: fallbackIconSize,
-      memCacheWidth: 720,
-      memCacheHeight: 720,
     );
   }
 }
