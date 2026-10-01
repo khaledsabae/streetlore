@@ -115,9 +115,11 @@ class _SplashScreenState extends State<SplashScreen>
           return Container(
             color: _bg,
             child: Stack(
+              clipBehavior: Clip.none,
               children: [
                 Center(
                   child: SingleChildScrollView(
+                    clipBehavior: Clip.none,
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,

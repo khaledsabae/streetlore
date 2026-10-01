@@ -4,19 +4,9 @@ import 'package:flutter/material.dart';
 
 class CompassBrandIntro extends StatefulWidget {
   final double size;
-
-  /// Total intro length. The orbit phase takes ~70% and the morph from
-  /// orbit into a horizontal "STREETLORE" line takes the remaining 30%.
   final Duration totalDuration;
-
-  /// If true the intro restarts at the end. Splash uses one-shot;
-  /// login screen keeps it looping so the logo animates every visit.
   final bool loop;
-
-  /// If true, also keeps the compass rotating continuously.
   final bool spinCompass;
-
-  /// Speed of the continuous compass rotation when [spinCompass] is true.
   final Duration compassSpinDuration;
 
   const CompassBrandIntro({
@@ -37,14 +27,7 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
   late final AnimationController _ctrl;
   late final AnimationController _compassSpinCtrl;
 
-  // Aspect ratio of the cropped compass image (660 wide x 486 tall,
-  // transparent PNG).
   static const double _imageAspect = 486 / 660;
-
-  // The compass image is rendered at this fraction of the widget width so
-  // there's generous transparent padding around it for the orbiting letters
-  // and the final assembled line. Smaller ratio = more clearance for the
-  // orbit but a smaller compass on screen.
   static const double _compassScale = 0.58;
 
   @override
@@ -74,22 +57,24 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
   Widget build(BuildContext context) {
     final compassWidth = widget.size * _compassScale;
     final compassHeight = compassWidth * _imageAspect;
-    // The orbit radius is the compass's visual radius plus a small padding
-    // so the letters float clearly outside the compass body.
+
+    // Diagonal of the compass image — the minimum square side needed so
+    // a 360° rotation never clips any corner.
+    final diagonal = math.sqrt(
+      compassWidth * compassWidth + compassHeight * compassHeight,
+    );
+    // The spinning container is this square, centered on the compass center.
+    final spinBoxSide = diagonal + 4; // +4 px safety margin
+
     final compassRadius = compassHeight / 2;
     final orbitRadius = compassRadius + 22;
 
-    // The widget height is sized exactly to fit:
-    //   compass + cream above (orbitRadius) + cream below (orbitRadius) +
-    //   bottom strip for the final line. No clamp - the widget takes only
-    // the space it needs so the parent Column never overflows.
-    final totalHeight =
-        compassHeight + 2 * orbitRadius + 60;
+    // Total widget height: enough for the spin box, orbit padding, and the
+    // assembled-text strip at the bottom.
+    final totalHeight = spinBoxSide + 2 * (orbitRadius - compassRadius) + 60;
 
-    // Compass is centered vertically inside the widget so the orbit has
-    // equal cream space above and below.
-    final compassTop = (totalHeight - compassHeight) / 2;
-    final compassCenterY = compassTop + compassHeight / 2;
+    // Center of the compass inside the widget.
+    final compassCenterY = totalHeight / 2;
 
     return AnimatedBuilder(
       animation: Listenable.merge([_ctrl, _compassSpinCtrl]),
@@ -98,38 +83,51 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
           width: widget.size,
           height: totalHeight,
           child: Stack(
-            alignment: Alignment.topCenter,
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
             children: [
-              if (widget.spinCompass)
-                Positioned(
-                  top: compassTop,
-                  child: RotationTransition(
-                    turns: _compassSpinCtrl,
-                    child: Image.asset(
-                      'assets/images/compass_only.png',
-                      width: compassWidth,
-                      height: compassHeight,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                )
-              else
-                Positioned(
-                  top: compassTop,
-                  child: Image.asset(
-                    'assets/images/compass_only.png',
-                    width: compassWidth,
-                    height: compassHeight,
-                    fit: BoxFit.contain,
-                  ),
+              // ── Compass image (optionally spinning) ──
+              Positioned(
+                top: compassCenterY - spinBoxSide / 2,
+                left: (widget.size - spinBoxSide) / 2,
+                width: spinBoxSide,
+                height: spinBoxSide,
+                child: OverflowBox(
+                  maxWidth: spinBoxSide,
+                  maxHeight: spinBoxSide,
+                  child: widget.spinCompass
+                      ? Transform.rotate(
+                          angle: _compassSpinCtrl.value * 2 * math.pi,
+                          alignment: Alignment.center,
+                          child: Center(
+                            child: Image.asset(
+                              'assets/images/compass_only.png',
+                              width: compassWidth,
+                              height: compassHeight,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        )
+                      : Center(
+                          child: Image.asset(
+                            'assets/images/compass_only.png',
+                            width: compassWidth,
+                            height: compassHeight,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                 ),
-              CustomPaint(
-                size: Size(widget.size, totalHeight),
-                painter: _LettersPainter(
-                  progress: _ctrl.value,
-                  orbitCenter: Offset(widget.size / 2, compassCenterY),
-                  orbitRadius: orbitRadius,
-                  totalHeight: totalHeight,
+              ),
+              // ── Orbiting / morphing / fading letters ──
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _LettersPainter(
+                    progress: _ctrl.value,
+                    orbitCenter: Offset(widget.size / 2, compassCenterY),
+                    orbitRadius: orbitRadius,
+                    totalHeight: totalHeight,
+                    isLooping: widget.loop,
+                  ),
                 ),
               ),
             ],
@@ -145,6 +143,7 @@ class _LettersPainter extends CustomPainter {
   final Offset orbitCenter;
   final double orbitRadius;
   final double totalHeight;
+  final bool isLooping;
 
   static const String _text = 'STREETLORE';
   static const Color _color = Color(0xFF1F3A5F);
@@ -155,6 +154,7 @@ class _LettersPainter extends CustomPainter {
     required this.orbitCenter,
     required this.orbitRadius,
     required this.totalHeight,
+    required this.isLooping,
   });
 
   static double _normalizeAngle(double a) {
@@ -171,25 +171,39 @@ class _LettersPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final n = _text.length;
 
-    // Fade letters in over the first 22% of the animation.
-    final fadeIn = (progress / 0.22).clamp(0.0, 1.0);
+    // ── Phase boundaries ──
+    // When looping (login): orbit → morph → fade-out → (loop restarts)
+    // When one-shot (splash): orbit → morph (letters stay visible)
+    const orbitEnd = 0.55;
+    const morphEnd = 0.80;
+    // 0.80..1.00 = fade-out (only used when looping)
+
+    final fadeIn = (progress / 0.18).clamp(0.0, 1.0);
     if (fadeIn <= 0) return;
 
-    // Final assembled-line position: ~32 px from the bottom of the widget,
-    // safely below the orbit bottom letter (which sits at orbitCenter.dy +
-    // orbitRadius).
+    final isMorph = progress >= orbitEnd;
+    final isFadeOut = isLooping && progress >= morphEnd;
+
+    final morphT = isMorph && !isFadeOut
+        ? ((progress - orbitEnd) / (morphEnd - orbitEnd)).clamp(0.0, 1.0)
+        : isFadeOut
+            ? 1.0
+            : 0.0;
+
+    // Fade-out alpha (only during Phase 3, only when looping)
+    final fadeOutAlpha = isFadeOut
+        ? 1.0 - ((progress - morphEnd) / (1.0 - morphEnd)).clamp(0.0, 1.0)
+        : 1.0;
+
+    // Combined alpha
+    final alpha = fadeIn * fadeOutAlpha;
+    if (alpha <= 0.001) return;
+
     final finalY = totalHeight - 32;
     final letterSpacing = size.width * 0.92 / (n - 1);
     final firstX = (size.width - letterSpacing * (n - 1)) / 2;
 
-    // Animation phase split: 0..0.70 orbit, 0.70..1.00 morph.
-    const orbitEnd = 0.70;
-    final isMorph = progress >= orbitEnd;
-    final morphT = isMorph ? (progress - orbitEnd) / (1.0 - orbitEnd) : 0.0;
-
-    // Live orbit base angle (only used during the orbit phase).
     final liveBaseAngle = progress * 2 * math.pi * 1.2;
-    // Frozen orbit base angle at the moment the morph begins.
     final morphBaseAngle = orbitEnd * 2 * math.pi * 1.2;
 
     for (int i = 0; i < n; i++) {
@@ -208,19 +222,18 @@ class _LettersPainter extends CustomPainter {
       double rotation;
 
       if (!isMorph) {
-        // Pure orbit phase: letter keeps moving around the compass.
         final angle =
-            -math.pi / 2 + i * (2 * math.pi / n) + liveBaseAngle + phaseOffset;
+            -math.pi / 2 +
+            i * (2 * math.pi / n) +
+            liveBaseAngle +
+            phaseOffset;
         x = orbitCenter.dx + orbitRadius * math.cos(angle);
         y = orbitCenter.dy + orbitRadius * math.sin(angle);
-        // Letter radial outward (pointing away from orbit center).
         rotation = _normalizeAngle(angle + math.pi / 2);
       } else {
-        // Morph phase: lerp position from orbit snapshot to final line.
         final eased = Curves.easeOutCubic.transform(morphT);
         x = morphStartX + (finalX - morphStartX) * eased;
         y = morphStartY + (finalY - morphStartY) * eased;
-        // Rotation: from radial-outward to upright (shortest path).
         final startRot = _normalizeAngle(morphStartAngle + math.pi / 2);
         rotation = startRot + (0.0 - startRot) * eased;
       }
@@ -233,7 +246,7 @@ class _LettersPainter extends CustomPainter {
         text: TextSpan(
           text: _text[i],
           style: TextStyle(
-            color: _color.withValues(alpha: fadeIn),
+            color: _color.withValues(alpha: alpha),
             fontSize: _letterFontSize,
             fontWeight: FontWeight.w700,
             letterSpacing: 2.2,
@@ -253,5 +266,6 @@ class _LettersPainter extends CustomPainter {
       old.progress != progress ||
       old.orbitCenter != orbitCenter ||
       old.orbitRadius != orbitRadius ||
-      old.totalHeight != totalHeight;
+      old.totalHeight != totalHeight ||
+      old.isLooping != isLooping;
 }
