@@ -181,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen>
                         child: const CompassBrandIntro(
                           size: 220,
                           totalDuration: Duration(milliseconds: 4200),
-                          loop: true,
+                          loop: false,
                           spinCompass: true,
                           compassSpinDuration: Duration(seconds: 16),
                         ),

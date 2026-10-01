@@ -27,7 +27,10 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
   late final AnimationController _ctrl;
   late final AnimationController _compassSpinCtrl;
 
-  static const double _imageAspect = 486 / 660;
+  // Aspect ratio of the cropped compass asset (677 wide x 713 tall,
+  // transparent PNG). User-provided asset is left intact (no extra
+  // padding) so the compass fills its own frame.
+  static const double _imageAspect = 713 / 677;
   static const double _compassScale = 0.58;
 
   @override
