@@ -37,8 +37,10 @@ class _CompassBrandIntroState extends State<CompassBrandIntro>
   late final AnimationController _ctrl;
   late final AnimationController _compassSpinCtrl;
 
-  // Aspect ratio of the cropped compass image (920 wide x 700 tall).
-  static const double _imageAspect = 700 / 920;
+  // Aspect ratio of the cropped compass image (660 wide x 486 tall,
+  // transparent PNG). The orbit radius is computed from the width so the
+  // letters float ~25 px further out than the compass edge.
+  static const double _imageAspect = 486 / 660;
 
   @override
   void initState() {
@@ -146,8 +148,11 @@ class _LettersPainter extends CustomPainter {
     if (fadeIn <= 0) return;
 
     // Orbit center sits at the visual center of the compass image.
+    // The compass is roughly a circle that fills the image height, so its
+    // visual radius is imageHeight/2. We add 25 px of padding so the
+    // orbiting letters float clearly outside the compass edge.
     final orbitCenter = Offset(size.width / 2, imageHeight / 2);
-    final orbitRadius = size.width * 0.36;
+    final orbitRadius = (imageHeight / 2) + 25;
 
     // Final assembled-line position (below the compass image).
     final finalY = imageHeight + size.width * 0.13;
