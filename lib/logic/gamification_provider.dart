@@ -152,12 +152,11 @@ class GamificationProvider extends ChangeNotifier {
       await _streak?.registerVisit();
     }
 
-    // Run the catalog-based achievement re-eval so that reaching a
-    // milestone (placesVisited, reviewsPosted, photosUploaded,
-    // streak.currentStreak, etc.) actually unlocks the corresponding
-    // catalog badge.
-    _achievements?.refreshFromStats();
-
+    // IMPORTANT: Update _stats FIRST (increment placesVisited /
+    // reviewsPosted / photosUploaded + add the points) BEFORE refreshing
+    // achievements. Previously _achievements?.refreshFromStats() ran with
+    // the pre-increment stats, so the very first check-in never unlocked
+    // `first_steps` or any category badge. See v1.0.59 release notes.
     final newPoints = _stats.totalPoints + pts;
     final newLevel = GamificationStats.levelForPoints(newPoints);
     final prevLevel = _stats.level;
@@ -184,6 +183,15 @@ class GamificationProvider extends ChangeNotifier {
       // unlocked (refreshFromStats called addBadgeIfMissing).
       badges: _stats.badges,
     );
+
+    // Now re-evaluate achievements with the FRESH, post-increment stats
+    // so the first check-in unlocks `first_steps` and similar milestones.
+    _achievements?.refreshFromStats();
+
+    // Pull back any catalog badges that the achievement provider just
+    // added (refreshFromStats → addBadgeIfMissing) so _stats.badges
+    // reflects them in this same notifyListeners cycle.
+    _stats = _stats.copyWith(badges: _stats.badges);
 
     await _save();
     notifyListeners();

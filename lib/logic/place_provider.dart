@@ -502,6 +502,7 @@ PlaceModel placeModelFromSupabaseRow(Map<String, dynamic> json) {
     isHiddenGem: (json['is_hidden_gem'] as bool?) ?? false,
     priceLocalEgp: json['price_local_egp'] as int?,
     priceForeignerEgp: json['price_foreigner_egp'] as int?,
+    displayOrder: (json['display_order'] as num?)?.toInt() ?? 999,
     bestTimeNote: json['best_time_note']?.toString(),
     bestTimeToVisit: json['best_time_to_visit']?.toString(),
     isIndoor: (json['is_indoor'] as bool?) ?? false,
