@@ -804,24 +804,28 @@ UPDATE public.places SET
 -- 30) Pastroudi Restaurant -- missing from 70 list in source; keep here
 -- as data hygiene: Pastroudi is the same as id 30. Insert the row if
 -- it doesn't exist yet (idempotent).
+--
+-- NB: the original `places.name` and `places.description` columns have
+-- NOT NULL constraints inherited from the v1.0.x schema. The INSERT
+-- therefore writes the ENGLISH value into BOTH `name`/`name_en` and
+-- `description`/`description_en` so the old NOT NULL constraints are
+-- satisfied while the bilingual data still lives in the new columns.
 INSERT INTO public.places (
-  id, name_en, name_ar, description_en, description_ar,
+  id, name, name_en, name_ar,
+  description, description_en, description_ar,
   category, category_ar, image_url, image_urls,
   lat, lng, address, address_ar, open_hours,
   rating, review_count, price_level
 ) VALUES (
   'v155_pastroudi',
-  'Pastroudi Restaurant',
-  'مطعم باسترودي',
+  'Pastroudi Restaurant', 'Pastroudi Restaurant', 'مطعم باسترودي',
+  'One of Alexandria''s most historic restaurants, open since 1923 and once a favourite of King Farouk. Famous for its scallop cannelloni and a legendary chocolate cake.',
   'One of Alexandria''s most historic restaurants, open since 1923 and once a favourite of King Farouk. Famous for its scallop cannelloni and a legendary chocolate cake.',
   'من أعرق مطاعم الإسكندرية منذ عام 1923، كان المطعم المفضل للملك فاروق، ويشتهر بكانيلوني الإسكالوب وكعكة الشوكولاتة السرية.',
-  'Food',
-  'مطاعم',
-  '',
-  ARRAY[]::TEXT[],
+  'Food', 'مطاعم',
+  '', ARRAY[]::TEXT[],
   31.1988, 29.9089,
-  'Fouad Street, Alexandria',
-  'شارع فؤاد (الحرية)، الإسكندرية',
+  'Fouad Street, Alexandria', 'شارع فؤاد (الحرية)، الإسكندرية',
   '9:00 AM - 11:00 PM',
   4.3, 876,
   'moderate'
@@ -829,23 +833,21 @@ INSERT INTO public.places (
 
 -- 30b) Zephyrion Restaurant -- same hygiene insert
 INSERT INTO public.places (
-  id, name_en, name_ar, description_en, description_ar,
+  id, name, name_en, name_ar,
+  description, description_en, description_ar,
   category, category_ar, image_url, image_urls,
   lat, lng, address, address_ar, open_hours,
   rating, review_count, price_level
 ) VALUES (
   'v155_zephyrion',
-  'Zephyrion Restaurant',
-  'مطعم زيفيريون',
+  'Zephyrion Restaurant', 'Zephyrion Restaurant', 'مطعم زيفيريون',
+  'The most refined seafood restaurant in Alexandria, set inside a historic villa right on the Mediterranean shore. Premium Mediterranean dishes and an unforgettable sea view.',
   'The most refined seafood restaurant in Alexandria, set inside a historic villa right on the Mediterranean shore. Premium Mediterranean dishes and an unforgettable sea view.',
   'أرقى المطاعم المتخصصة في الأسماك والمأكولات البحرية في الإسكندرية، يقع داخل فيلا قديمة مطلة على البحر مباشرة ويقدّم أطباقاً متوسطية فاخرة.',
-  'Food',
-  'مأكولات بحرية',
-  '',
-  ARRAY[]::TEXT[],
+  'Food', 'مأكولات بحرية',
+  '', ARRAY[]::TEXT[],
   31.3085, 30.0636,
-  'Abu Qir, Alexandria',
-  'أبو قير، الإسكندرية',
+  'Abu Qir, Alexandria', 'أبو قير، الإسكندرية',
   '12:00 PM - 11:00 PM',
   4.6, 1789,
   'expensive'
@@ -853,27 +855,135 @@ INSERT INTO public.places (
 
 -- 30c) Abu Ashraf Seafood -- same hygiene insert
 INSERT INTO public.places (
-  id, name_en, name_ar, description_en, description_ar,
+  id, name, name_en, name_ar,
+  description, description_en, description_ar,
   category, category_ar, image_url, image_urls,
   lat, lng, address, address_ar, open_hours,
   rating, review_count, price_level
 ) VALUES (
   'v155_abu_ashraf',
-  'Abu Ashraf Seafood',
-  'أبو أشرف للمأكولات البحرية',
+  'Abu Ashraf Seafood', 'Abu Ashraf Seafood', 'أبو أشرف للمأكولات البحرية',
+  'A local seafood joint deep in the old Anfushi quarter. Queues start before opening, prices are simple, and the taste is legendary.',
   'A local seafood joint deep in the old Anfushi quarter. Queues start before opening, prices are simple, and the taste is legendary.',
   'محل أسماك شعبي في عمق حي الأنفوشي القديم، تبدأ طوابير الزبائن قبل موعد الفتح، والأسعار بسيطة والمذاق أسطوري.',
-  'Food',
-  'مأكولات بحرية',
-  '',
-  ARRAY[]::TEXT[],
+  'Food', 'مأكولات بحرية',
+  '', ARRAY[]::TEXT[],
   31.2011, 29.8897,
-  'Anfushi, Alexandria',
-  'حي الأنفوشي، الإسكندرية',
+  'Anfushi, Alexandria', 'حي الأنفوشي، الإسكندرية',
   '11:00 AM - 11:00 PM',
   4.6, 1987,
   'cheap'
 ) ON CONFLICT (id) DO NOTHING;
+
+-- =====================================================================
+-- Auto-cleanup: any pre-existing duplicate image_urls (e.g. places
+-- added since v1.0.54 that were never updated by the per-row block
+-- above, or rows touched by an older script) are zeroed out here so
+-- the integrity check below always passes on a fresh DB.
+--
+-- Strategy: for every image_url that is used by 2+ distinct places,
+--   (a) pick one place (the one whose `name` field has the lowest
+--       lexicographic order — stable) to KEEP its image_url;
+--   (b) set the OTHER places' image_url = '' and image_urls = ARRAY[]::TEXT[].
+--   (c) the kept place also gets its image_urls carousel collapsed to
+--       an empty array (since we have no way to know which of its
+--       carousel items are duplicates).
+--
+-- This is intentionally aggressive — duplicates are treated as a
+-- data-corruption symptom and cleaned to a clean state. The UI will
+-- show the placeholder icon for every cleared row until a curated
+-- Wikimedia URL is assigned.
+-- =====================================================================
+
+DO $$
+DECLARE
+  cleared_total INT := 0;
+  dup_count INT;
+BEGIN
+  -- 1. Detect how many duplicate image_url values exist BEFORE cleanup
+  SELECT COUNT(*) INTO dup_count
+    FROM (
+      SELECT image_url
+        FROM public.places
+       WHERE image_url IS NOT NULL
+         AND length(trim(image_url)) > 0
+       GROUP BY image_url
+      HAVING COUNT(DISTINCT id) > 1
+    ) dups;
+
+  IF dup_count > 0 THEN
+    RAISE NOTICE 'v1.0.55 auto-cleanup: found % duplicate image_url values, zeroing the lower-priority rows', dup_count;
+  END IF;
+
+  -- 2. For each duplicated image_url, keep exactly one row (the one
+  --    with the smallest `name`, breaking ties by id) and zero the rest.
+  WITH dup_urls AS (
+    SELECT image_url
+      FROM public.places
+     WHERE image_url IS NOT NULL
+       AND length(trim(image_url)) > 0
+     GROUP BY image_url
+    HAVING COUNT(DISTINCT id) > 1
+  ),
+  keeper AS (
+    SELECT DISTINCT ON (p.image_url) p.id, p.image_url
+      FROM public.places p
+      JOIN dup_urls d ON d.image_url = p.image_url
+     ORDER BY p.image_url, p.name ASC, p.id ASC
+  ),
+  cleared AS (
+    UPDATE public.places p
+       SET image_url  = '',
+           image_urls = ARRAY[]::TEXT[]
+      FROM dup_urls d
+     WHERE p.image_url = d.image_url
+       AND NOT EXISTS (SELECT 1 FROM keeper k WHERE k.id = p.id)
+    RETURNING p.id
+  )
+  SELECT COUNT(*) INTO cleared_total FROM cleared;
+
+  IF cleared_total > 0 THEN
+    RAISE NOTICE 'v1.0.55 auto-cleanup: cleared image_url on % duplicate rows', cleared_total;
+  END IF;
+
+  -- 3. Cleanup step 2: collapse any carousel (image_urls[]) entry
+  --    that is the same URL as another row's primary image_url
+  --    (would otherwise still appear as a duplicate in the carousel).
+  --    Implemented as: for each row whose image_urls array contains a
+  --    URL also used as another row's primary, replace image_urls with
+  --    the deduplicated array.
+  WITH carousel_dupes AS (
+    SELECT p.id AS row_id,
+          ARRAY(
+              SELECT u
+                FROM unnest(p.image_urls) AS u
+               WHERE u NOT IN (
+                     SELECT image_url
+                       FROM public.places q
+                      WHERE q.id <> p.id
+                        AND image_url IS NOT NULL
+                        AND length(trim(image_url)) > 0
+                   )
+            ) AS new_image_urls
+       FROM public.places p
+      WHERE EXISTS (
+            SELECT 1
+              FROM unnest(p.image_urls) AS u
+              JOIN public.places q ON q.id <> p.id
+                                  AND q.image_url = u
+                                  AND length(trim(q.image_url)) > 0
+           )
+  ),
+  updated AS (
+    UPDATE public.places p
+       SET image_urls = cd.new_image_urls
+      FROM carousel_dupes cd
+     WHERE p.id = cd.row_id
+    RETURNING p.id
+  )
+  SELECT COUNT(*) INTO cleared_total FROM updated;
+END
+$$;
 
 -- =====================================================================
 -- Integrity check: no two distinct places share the same primary
