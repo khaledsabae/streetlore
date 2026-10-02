@@ -12,7 +12,20 @@ class PlaceProvider extends ChangeNotifier {
   SupabaseClient get _client => Supabase.instance.client;
 
   List<PlaceModel> _places = [];
-  List<PlaceModel> get places => List.unmodifiable(_places);
+
+  /// ALWAYS sorted by (displayOrder ASC, id ASC). Single source of truth
+  /// for the UI. `_places` is the raw cache (set by loadPlaces/merge/fallback);
+  /// this getter re-sorts on every read so the UI never sees out-of-order data,
+  /// even after the DB backfill pushed everything to display_order=0.
+  List<PlaceModel> get places {
+    final copy = [..._places];
+    copy.sort((a, b) {
+      final byOrder = a.displayOrder.compareTo(b.displayOrder);
+      if (byOrder != 0) return byOrder;
+      return a.id.compareTo(b.id);
+    });
+    return List.unmodifiable(copy);
+  }
 
   bool _loading = false;
   bool get loading => _loading;

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/services/compass_service.dart';
+import '../../core/services/qibla_service.dart';
 
 class CompassCard extends StatefulWidget {
   const CompassCard({super.key});
@@ -25,7 +26,11 @@ class _CompassCardState extends State<CompassCard>
   late final Animation<double> _iconRotation;
 
   double _headingDeg = 0;
+  double _qiblaBearingDeg = 0;
+  bool _qiblaAvailable = false;
+
   StreamSubscription<double>? _compassSub;
+  StreamSubscription<double>? _qiblaSub;
 
   @override
   void initState() {
@@ -88,11 +93,29 @@ class _CompassCardState extends State<CompassCard>
         }
       });
     });
+
+    _qiblaSub = QiblaService.instance.bearingStream.listen((bearing) {
+      if (!mounted) return;
+      setState(() {
+        _qiblaBearingDeg = bearing;
+        _qiblaAvailable = true;
+      });
+    });
+
+    // Kick off location fetch (cached if location already known).
+    QiblaService.instance.refreshFromCurrentLocation().then((_) {
+      if (!mounted) return;
+      setState(() {
+        _qiblaAvailable = QiblaService.instance.hasBearing;
+        _qiblaBearingDeg = QiblaService.instance.lastBearingDeg;
+      });
+    });
   }
 
   @override
   void dispose() {
     _compassSub?.cancel();
+    _qiblaSub?.cancel();
     _introCtrl.dispose();
     _pulseCtrl.dispose();
     _iconCtrl.dispose();
@@ -118,6 +141,14 @@ class _CompassCardState extends State<CompassCard>
           final hasCompass = CompassService.instance.isActuallyWorking;
           final angle = _headingDeg * (pi / 180.0);
           final dir = _dirLabel(_headingDeg);
+          // Rotation of the disc = -current heading (so North stays up
+          // when the phone is pointing north).
+          final discRotation = -angle;
+          // Where the Qibla arrow points INSIDE the disc.
+          // qiblaRel = qiblaBearing - headingDeg  (negative = to the left)
+          final qiblaRelDeg = _qiblaAvailable
+              ? (_qiblaBearingDeg - _headingDeg)
+              : 0;
           return Transform.translate(
             offset: Offset(0, _introOffset.value),
             child: Transform.rotate(
@@ -145,50 +176,102 @@ class _CompassCardState extends State<CompassCard>
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 58,
-                        height: 58,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF4F46E5), Color(0xFF22C55E)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Color.fromARGB(glowAlpha, 79, 70, 229),
-                              blurRadius: 16 + pulseValue * 8,
-                              spreadRadius: pulseValue * 2,
-                            ),
-                          ],
-                        ),
+                      SizedBox(
+                        width: 84,
+                        height: 84,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
-                            const Positioned(
-                              top: 4,
-                              child: Text(
-                                'N',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w900,
+                            // Outer rotating disc
+                            Transform.rotate(
+                              angle: hasCompass
+                                  ? discRotation
+                                  : _iconRotation.value,
+                              child: Container(
+                                width: 84,
+                                height: 84,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF4F46E5),
+                                      Color(0xFF22C55E)
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Color.fromARGB(
+                                          glowAlpha, 79, 70, 229),
+                                      blurRadius: 16 + pulseValue * 8,
+                                      spreadRadius: pulseValue * 2,
+                                    ),
+                                  ],
+                                ),
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    const Positioned(
+                                      top: 4,
+                                      child: Text(
+                                        'N',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                    const Center(
+                                      child: Icon(
+                                        Icons.navigation_rounded,
+                                        color: Colors.white,
+                                        size: 30,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                            Center(
-                              child: RotationTransition(
-                                turns: hasCompass
-                                    ? AlwaysStoppedAnimation(-angle / (2 * pi))
-                                    : _iconRotation,
-                                child: const Icon(
-                                  Icons.navigation_rounded,
-                                  color: Colors.white,
-                                  size: 26,
+                            // Qibla arrow indicator (NOT rotated with disc;
+                            // its rotation = qiblaRelDeg)
+                            if (_qiblaAvailable)
+                              Transform.rotate(
+                                angle: qiblaRelDeg * (pi / 180.0),
+                                child: Container(
+                                  width: 84,
+                                  height: 84,
+                                  alignment: Alignment.topCenter,
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(top: 1),
+                                    child: Container(
+                                      width: 14,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFEAB308),
+                                        borderRadius:
+                                            BorderRadius.circular(3),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color(0xFFEAB308)
+                                                .withValues(alpha: 0.8),
+                                            blurRadius: 6,
+                                            spreadRadius: 1,
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.mosque_rounded,
+                                          color: Colors.white,
+                                          size: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),
@@ -243,6 +326,28 @@ class _CompassCardState extends State<CompassCard>
                                 height: 1.4,
                               ),
                             ),
+                            if (_qiblaAvailable) ...[
+                              const SizedBox(height: 4),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.mosque_rounded,
+                                    color: Color(0xFFEAB308),
+                                    size: 13,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    'Qibla ${_qiblaBearingDeg.round()}°',
+                                    style: TextStyle(
+                                      color: context.textSec,
+                                      fontSize: 11,
+                                      height: 1.3,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
                       ),
