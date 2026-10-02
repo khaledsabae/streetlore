@@ -322,8 +322,25 @@ List<MapPoi> _hotels = const [
 
 
 
-const String _hotelHeroImage =
-    'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&q=70';
+// Per-hotel image URL. Empty string means "use the placeholder icon" —
+// each hotel MUST NOT share an image with another hotel or any other row.
+// We have no verified unique Wikimedia Commons image for any individual
+// Alexandria hotel, so every hotel currently falls back to the placeholder
+// icon. Add a per-id entry ONLY with a verified unique Wikimedia URL.
+const Map<String, String> _hotelImageById = {
+  'hotel-four-seasons':       '',
+  'hotel-sofitel-alex':       '',
+  'hotel-steigenberger-cecil':'',
+  'hotel-tolip':              '',
+  'hotel-paradise-inn':       '',
+  'hotel-romance':            '',
+  'hotel-cherry-maryski':     '',
+  'hotel-plaza':              '',
+  'hotel-king-mariout':       '',
+  'hotel-san-stefano':        '',
+  'hotel-downtown':           '',
+  'hotel-borg-arab':          '',
+};
 
 List<PlaceModel> _hotelPlaces = _hotels
     .map(
@@ -336,7 +353,7 @@ List<PlaceModel> _hotelPlaces = _hotels
             'stays, located at ${poi.address}. ${poi.stars != null ? "${poi.stars}-star rating. " : ""}'
             'Tap Save to bookmark, or tap Check-in when you arrive.',
         descriptionAr: null,
-        imageUrl: _hotelHeroImage,
+        imageUrl: _hotelImageById[poi.id] ?? '',
         rating: (poi.stars ?? 3).toDouble(),
         category: 'Hotels',
         categoryAr: 'فنادق',

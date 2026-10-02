@@ -53,3 +53,6 @@ serve.dart
 *.ps1
 strip_comments.ps1
 .release_payload.json
+
+# Locally downloaded APK artifacts (release artefacts come from CI, not commits)
+streetlore-*.apk
