@@ -56,6 +56,8 @@ class PlaceModel {
   final int? priceLocalEgp;
   final int? priceForeignerEgp;
 
+  final int displayOrder;
+
   final Map<String, int>? bestTimeOverride;
 
   final String? bestTimeNote;
@@ -87,6 +89,7 @@ class PlaceModel {
     this.isHiddenGem = false,
     this.priceLocalEgp,
     this.priceForeignerEgp,
+    this.displayOrder = 999,
     this.bestTimeOverride,
     this.bestTimeNote,
     this.bestTimeToVisit,
@@ -175,6 +178,7 @@ class PlaceModel {
       isHiddenGem: json['isHiddenGem'] as bool? ?? false,
       priceLocalEgp: json['priceLocalEgp'] as int?,
       priceForeignerEgp: json['priceForeignerEgp'] as int?,
+      displayOrder: (json['display_order'] as num?)?.toInt() ?? 999,
       bestTimeOverride: bestTimeOverride,
       bestTimeNote: json['best_time_note'] as String?,
       bestTimeToVisit: json['best_time_to_visit'] as String?,

@@ -118,7 +118,8 @@ class PlaceProvider extends ChangeNotifier {
       final res = await _client
           .from('places')
           .select()
-          .order('id')
+          .order('display_order', ascending: true)
+          .order('id', ascending: true)
           .timeout(const Duration(seconds: 10));
       final list = (res as List<dynamic>)
           .map((e) => _placeFromSupabase(e as Map<String, dynamic>))
@@ -191,6 +192,8 @@ class PlaceProvider extends ChangeNotifier {
     if (additions.isEmpty) return;
     final merged = [..._places, ...additions]
       ..sort((a, b) {
+        final byOrder = a.displayOrder.compareTo(b.displayOrder);
+        if (byOrder != 0) return byOrder;
         final byCat = a.category.compareTo(b.category);
         if (byCat != 0) return byCat;
         return a.nameEn.compareTo(b.nameEn);
