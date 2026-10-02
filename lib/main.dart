@@ -60,6 +60,11 @@ Future<void> main() async {
     places: placeProvider,
     streak: streak,
   );
+  // v1.0.56: wire gamification -> streak/achievements so a single
+  // gamification.applyAction('check_in', ...) call updates the
+  // streak and re-runs the catalog-based achievement re-evaluation
+  // automatically (the missing piece that broke badge unlocks).
+  gamification.bindHelpers(streak: streak, achievements: achievements);
 
   
   

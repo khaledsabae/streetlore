@@ -13,6 +13,7 @@ import '../../logic/auth_provider.dart';
 import '../../logic/place_provider.dart';
 import '../../logic/review_provider.dart';
 import '../../logic/streak_provider.dart';
+import '../../logic/gamification_provider.dart';
 import '../../logic/locale_provider.dart';
 import '../../logic/offline_provider.dart';
 import '../../data/models/review_model.dart';
@@ -521,6 +522,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                             .read<StreakProvider>();
                                         final placeProvider = context
                                             .read<PlaceProvider>();
+                                        final gamification = context
+                                            .read<GamificationProvider>();
                                         final messenger = ScaffoldMessenger.of(
                                           context,
                                         );
@@ -542,39 +545,24 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                           );
                                           return;
                                         }
-                                        
-                                        
-                                        
-                                        final newStreak = await streak
-                                            .registerVisit();
+
+                                        // v1.0.56: gam.applyAction is
+                                        // the single orchestrator — it
+                                        // updates the streak, re-runs the
+                                        // catalog achievement re-eval, and
+                                        // persists the row to Supabase.
+                                        await gamification.applyAction(
+                                          'check_in',
+                                          placeId: place.id,
+                                        );
+                                        final newStreak =
+                                            streak.currentStreak;
                                         setState(
                                           () => _isVisited = true,
                                         );
                                         try {
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          await Supabase.instance.client
-                                              .from('place_checkins')
-                                              .upsert({
-                                            'user_id': userId,
-                                            'place_id': place.id,
-                                          }, onConflict: 'user_id, place_id')
-                                              .select();
+                                          placeProvider
+                                              .fetchRemoteCounts(userId);
                                           
                                           
                                           

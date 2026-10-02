@@ -511,8 +511,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     builder: (context, ach, _) {
                       final recent = ach.recentUnlocked(limit: 3);
                       final ratio = ach.completionRatio;
-                      final unlocked = ach.totalUnlocked;
-                      final total = ach.totalAvailable;
+                      // v1.0.56 fix: variables are explicitly
+                      // unlocked_count / total_count. The displayed
+                      // format is "{unlocked_count} / {total_count}".
+                      final unlockedCount = ach.totalUnlocked;
+                      final totalCount = ach.totalAvailable;
                       return GestureDetector(
                         onTap: () {
                           HapticFeedback.lightImpact();
@@ -580,7 +583,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           ),
                                         ),
                                         Text(
-                                          '$unlocked / $total unlocked',
+                                          '$unlockedCount / $totalCount unlocked',
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 16,
