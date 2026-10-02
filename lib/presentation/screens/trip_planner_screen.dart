@@ -125,7 +125,9 @@ class TripPlannerScreen extends StatelessWidget {
                           ),
                         ),
                         title: Text(
-                          place.name,
+                          place.localizedName(
+                            Localizations.localeOf(context).languageCode,
+                          ),
                           style: TextStyle(
                             color: context.textPri,
                             fontWeight: FontWeight.bold,

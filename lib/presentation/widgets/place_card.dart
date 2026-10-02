@@ -24,33 +24,37 @@ class PlaceCard extends StatefulWidget {
 class _PlaceCardState extends State<PlaceCard> {
   @override
   Widget build(BuildContext context) {
-    return PressScale(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        widget.onTap?.call();
-      },
-      pressedScale: 0.97,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
-        decoration: BoxDecoration(
-          color: context.cardColor,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
-              blurRadius: 16,
-              offset: const Offset(0, 5),
+    return Consumer<LocaleProvider>(
+      builder: (context, locale, _) {
+        return PressScale(
+          onTap: () {
+            HapticFeedback.lightImpact();
+            widget.onTap?.call();
+          },
+          pressedScale: 0.97,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 7),
+            decoration: BoxDecoration(
+              color: context.cardColor,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.07),
+                  blurRadius: 16,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildImage(),
-            Expanded(child: _buildDetails()),
-          ],
-        ),
-      ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildImage(),
+                Expanded(child: _buildDetails(locale.locale.languageCode)),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -129,7 +133,7 @@ class _PlaceCardState extends State<PlaceCard> {
     );
   }
 
-  Widget _buildDetails() {
+  Widget _buildDetails(String localeCode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       child: Column(
@@ -152,7 +156,9 @@ class _PlaceCardState extends State<PlaceCard> {
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
-                      widget.place.category.toUpperCase(),
+                      widget.place
+                          .localizedCategory(localeCode)
+                          .toUpperCase(),
                       style: TextStyle(
                         color: AppColors.primary,
                         fontSize: 9,
@@ -178,7 +184,7 @@ class _PlaceCardState extends State<PlaceCard> {
             child: Material(
               type: MaterialType.transparency,
               child: Text(
-                widget.place.name,
+                widget.place.localizedName(localeCode),
                 style: AppTextStyles.placeName.copyWith(color: context.textPri),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -188,9 +194,7 @@ class _PlaceCardState extends State<PlaceCard> {
           const SizedBox(height: 5),
 
           Text(
-            widget.place.localizedDescription(
-              context.read<LocaleProvider>().locale.languageCode,
-            ),
+            widget.place.localizedDescription(localeCode),
             style: AppTextStyles.placeDescription,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,

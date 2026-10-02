@@ -84,7 +84,9 @@ class _LiveChatScreenState extends State<LiveChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    place.name,
+                    place.localizedName(
+                      Localizations.localeOf(context).languageCode,
+                    ),
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,

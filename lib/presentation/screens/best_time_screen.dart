@@ -318,7 +318,9 @@ class _BestTimeCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    place.name,
+                    place.localizedName(
+                      Localizations.localeOf(context).languageCode,
+                    ),
                     style: TextStyle(
                       color: context.textPri,
                       fontSize: 15,

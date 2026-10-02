@@ -7,6 +7,7 @@ class ItineraryModel {
   final String description;
   final String? descriptionAr;
   final String duration;
+  final String? durationAr;
   final String imageUrl;
   final List<PlaceModel> places;
   const ItineraryModel({
@@ -16,6 +17,7 @@ class ItineraryModel {
     required this.description,
     this.descriptionAr,
     required this.duration,
+    this.durationAr,
     required this.imageUrl,
     required this.places,
   });
@@ -36,6 +38,14 @@ class ItineraryModel {
     return description;
   }
 
+  
+  String localizedDuration(String locale) {
+    if (locale == 'ar' && durationAr != null && durationAr!.isNotEmpty) {
+      return durationAr!;
+    }
+    return duration;
+  }
+
   factory ItineraryModel.fromJson(Map<String, dynamic> json) {
     return ItineraryModel(
       id: json['id'] as String,
@@ -45,6 +55,8 @@ class ItineraryModel {
       descriptionAr:
           json['description_ar'] as String? ?? json['descriptionAr'] as String?,
       duration: json['duration'] as String,
+      durationAr:
+          json['duration_ar'] as String? ?? json['durationAr'] as String?,
       imageUrl: json['imageUrl'] as String,
       places:
           (json['places'] as List<dynamic>?)
@@ -61,6 +73,7 @@ class ItineraryModel {
       'description': description,
       'descriptionAr': descriptionAr,
       'duration': duration,
+      'durationAr': durationAr,
       'imageUrl': imageUrl,
       'places': places.map((e) => e.toJson()).toList(),
     };

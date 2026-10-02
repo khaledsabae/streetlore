@@ -97,7 +97,7 @@ ALEXANDRIA — ANCHOR FACTS (always ground answers here):
     final placesForContext = availablePlaces
         .map(
           (p) =>
-              '{"id":"${p.id}","name":${jsonEncode(p.name)},"category":"${p.category}","description":${jsonEncode(p.description)},"address":${jsonEncode(p.address)},"bestTimeToVisit":${jsonEncode(p.bestTimeToVisit ?? '')},"isIndoor":${p.isIndoor},"lat":${p.lat},"lng":${p.lng}}',
+              '{"id":"${p.id}","name":${jsonEncode(p.nameEn)},"category":"${p.category}","description":${jsonEncode(p.descriptionEn)},"address":${jsonEncode(p.address)},"bestTimeToVisit":${jsonEncode(p.bestTimeToVisit ?? '')},"isIndoor":${p.isIndoor},"lat":${p.lat},"lng":${p.lng}}',
         )
         .join(',');
 

@@ -63,7 +63,7 @@ class AITourGuideService {
     final isWeekend =
         todayWeekday == DateTime.friday || todayWeekday == DateTime.saturday;
 
-    return '''You are an enthusiastic LOCAL tour guide for Alexandria, Egypt — you have actually walked these streets for years. You are currently helping a visitor who just opened the detail page for "${place.name}" (category: ${place.category}).
+    return '''You are an enthusiastic LOCAL tour guide for Alexandria, Egypt — you have actually walked these streets for years. You are currently helping a visitor who just opened the detail page for "${place.nameEn}" (category: ${place.category}).
 
 ALEXANDRIA — ANCHOR FACTS (use these as truth anchors):
 - Founded 331 BC by Alexander the Great. Ptolemaic capital. Once the largest
@@ -91,7 +91,7 @@ CURRENT CONTEXT (use this to tailor every answer):
 - Late night: ${isLateNight ? 'YES — most places are closed' : 'no'}
 
 KEY FACTS about this place:
-- Description: ${place.description}
+- Description: ${place.descriptionEn}
 - Address: ${place.address}
 - Open hours: ${place.openHours}
 - Rating: ${place.rating}/5 (${place.reviewCount} reviews)
@@ -157,7 +157,7 @@ safety, and accessibility.''';
     _messages.add(
       ChatMessage(
         text:
-            'Marhaba! I\'m your local guide for ${place.name}. Ask me anything — history, tips, what to see nearby, or anything else. بالإنجليزي أو العربي، زي ما تحب. 😊',
+            'Marhaba! I\'m your local guide for ${place.nameEn}. Ask me anything — history, tips, what to see nearby, or anything else. بالإنجليزي أو العربي، زي ما تحب. 😊',
         isUser: false,
         timestamp: DateTime.now(),
       ),
@@ -165,7 +165,7 @@ safety, and accessibility.''';
   }
 
   String _offlineWelcome(PlaceModel place) {
-    return '👋 مرحباً! أنا دليلك المحلي لـ ${place.name}.\n\n${place.description}\n\nاسألني عن: المواعيد، الأسعار، التاريخ، النصايح، أو العنوان!\n\n(وضع محلي — Gemini API غير مفعّل في الوقت الحالي أو الـ key غير صالح. كل الإجابات هنا من بيانات محلية على الجهاز.)';
+    return '👋 مرحباً! أنا دليلك المحلي لـ ${place.nameEn}.\n\n${place.descriptionEn}\n\nاسألني عن: المواعيد، الأسعار، التاريخ، النصايح، أو العنوان!\n\n(وضع محلي — Gemini API غير مفعّل في الوقت الحالي أو الـ key غير صالح. كل الإجابات هنا من بيانات محلية على الجهاز.)';
   }
 
   Future<String> send(String userText) async {
@@ -310,8 +310,8 @@ $userText''';
             : 'Good time to visit right now.';
       }
       return isArabic
-          ? '🕐 ${place.name} مفتوح: ${place.openHours}.\n$timeHint'
-          : '🕐 ${place.name} hours: ${place.openHours}.\n$timeHint';
+          ? '🕐 ${place.nameEn} مفتوح: ${place.openHours}.\n$timeHint'
+          : '🕐 ${place.nameEn} hours: ${place.openHours}.\n$timeHint';
     }
     if (lower.contains('price') ||
         lower.contains('cost') ||
@@ -323,8 +323,8 @@ $userText''';
         lower.contains('فلوس')) {
       if (place.isFree) {
         return isArabic
-            ? '🎉 ${place.name} دخوله مجاناً!'
-            : '🎉 ${place.name} is FREE entry!';
+            ? '🎉 ${place.nameEn} دخوله مجاناً!'
+            : '🎉 ${place.nameEn} is FREE entry!';
       }
       final local = place.priceLocalEgp ?? '?';
       final foreign = place.priceForeignerEgp ?? '?';
@@ -341,8 +341,8 @@ $userText''';
         lower.contains('فين') ||
         lower.contains('موقع')) {
       return isArabic
-          ? '📍 ${place.name} موجود في: ${place.address}.\nتقدر تضغط على زر "Go" في صفحة المكان علشان يفتحلك خريطة.'
-          : '📍 ${place.name} is located at: ${place.address}.\nTap the "Go" button on the place page to open directions.';
+          ? '📍 ${place.nameEn} موجود في: ${place.address}.\nتقدر تضغط على زر "Go" في صفحة المكان علشان يفتحلك خريطة.'
+          : '📍 ${place.nameEn} is located at: ${place.address}.\nTap the "Go" button on the place page to open directions.';
     }
     if (lower.contains('history') ||
         lower.contains('about') ||
@@ -356,8 +356,8 @@ $userText''';
         lower.contains('إيه') ||
         lower.contains('حك')) {
       return isArabic
-          ? '🏛️ ${place.description}\n\nتقييم المكان: ⭐ ${place.rating}/5 من ${place.reviewCount} زيارة.'
-          : '🏛️ ${place.description}\n\nRating: ⭐ ${place.rating}/5 from ${place.reviewCount} visits.';
+          ? '🏛️ ${place.descriptionEn}\n\nتقييم المكان: ⭐ ${place.rating}/5 من ${place.reviewCount} زيارة.'
+          : '🏛️ ${place.descriptionEn}\n\nRating: ⭐ ${place.rating}/5 from ${place.reviewCount} visits.';
     }
     if (lower.contains('tip') ||
         lower.contains('advice') ||
@@ -371,8 +371,8 @@ $userText''';
         lower.contains('الأفضل') ||
         lower.contains('أحسن')) {
       return isArabic
-          ? '💡 نصايح لزيارة ${place.name}:\n• زور قبل الـ9 الصبح — البحر هادي والشوارع فاضية\n• خد معك مية واقي شمس (إسكندرية حارة الشتا قصاد)\n• أحسن وقت للتصوير: قبل الغروب بساعة من الجهة الشمالية\n• المواعيد: ${place.openHours}'
-          : '💡 Tips for ${place.name}:\n• Arrive before 9 AM — calm sea and quiet streets\n• Bring water + sunblock (Alex sun is stronger than it feels)\n• Best photos: 1 hour before sunset, north-facing angle\n• Hours: ${place.openHours}';
+          ? '💡 نصايح لزيارة ${place.nameEn}:\n• زور قبل الـ9 الصبح — البحر هادي والشوارع فاضية\n• خد معك مية واقي شمس (إسكندرية حارة الشتا قصاد)\n• أحسن وقت للتصوير: قبل الغروب بساعة من الجهة الشمالية\n• المواعيد: ${place.openHours}'
+          : '💡 Tips for ${place.nameEn}:\n• Arrive before 9 AM — calm sea and quiet streets\n• Bring water + sunblock (Alex sun is stronger than it feels)\n• Best photos: 1 hour before sunset, north-facing angle\n• Hours: ${place.openHours}';
     }
     if (lower.contains('rating') ||
         lower.contains('review') ||
@@ -381,8 +381,8 @@ $userText''';
         lower.contains('رأي') ||
         lower.contains('نجوم')) {
       return isArabic
-          ? '⭐ تقييم ${place.name}: ${place.rating}/5 من ${place.reviewCount} زيارة.\nالمكان من أفضل أماكن ${place.category} في الإسكندرية.'
-          : '⭐ ${place.name} rating: ${place.rating}/5 from ${place.reviewCount} reviews.\nIt\'s one of the top ${place.category} spots in Alexandria.';
+          ? '⭐ تقييم ${place.nameEn}: ${place.rating}/5 من ${place.reviewCount} زيارة.\nالمكان من أفضل أماكن ${place.category} في الإسكندرية.'
+          : '⭐ ${place.nameEn} rating: ${place.rating}/5 from ${place.reviewCount} reviews.\nIt\'s one of the top ${place.category} spots in Alexandria.';
     }
     if (lower.contains('family') ||
         lower.contains('kids') ||
@@ -391,8 +391,8 @@ $userText''';
         lower.contains('أطفال') ||
         lower.contains('عائلي')) {
       return isArabic
-          ? '👨‍👩‍👧 ${place.name} مناسب للعائلات: ${place.isFree ? 'الدخول مجاني' : 'التذكرة رمزية'}.\nيوجد مكان مفتوح للاسترخاء. المواعيد: ${place.openHours}'
-          : '👨‍👩‍👧 ${place.name} is family-friendly: ${place.isFree ? 'free entry' : 'affordable ticket'}.\nOpen spaces for kids. Hours: ${place.openHours}';
+          ? '👨‍👩‍👧 ${place.nameEn} مناسب للعائلات: ${place.isFree ? 'الدخول مجاني' : 'التذكرة رمزية'}.\nيوجد مكان مفتوح للاسترخاء. المواعيد: ${place.openHours}'
+          : '👨‍👩‍👧 ${place.nameEn} is family-friendly: ${place.isFree ? 'free entry' : 'affordable ticket'}.\nOpen spaces for kids. Hours: ${place.openHours}';
     }
     if (lower.contains('photo') ||
         lower.contains('picture') ||
@@ -401,8 +401,8 @@ $userText''';
         lower.contains('تصوير') ||
         lower.contains('كاميرا')) {
       return isArabic
-          ? '📸 أحسن مكان للتصوير في ${place.name}: الواجهة الأمامية وقت الغروب (الساعة 5-6 مساءً). الإضاءة الذهبية بتدي صور رائعة.\nالكاميرا: فون عادي أو كاميرا DSLR.'
-          : '📸 Best photo spots at ${place.name}: the front facade around sunset (5-6 PM) gives golden-hour light.\nAny phone camera or DSLR works great here.';
+          ? '📸 أحسن مكان للتصوير في ${place.nameEn}: الواجهة الأمامية وقت الغروب (الساعة 5-6 مساءً). الإضاءة الذهبية بتدي صور رائعة.\nالكاميرا: فون عادي أو كاميرا DSLR.'
+          : '📸 Best photo spots at ${place.nameEn}: the front facade around sunset (5-6 PM) gives golden-hour light.\nAny phone camera or DSLR works great here.';
     }
     if (lower.contains('nearby') ||
         lower.contains('close') ||
@@ -411,8 +411,8 @@ $userText''';
         lower.contains('مجاور') ||
         lower.contains('جنب')) {
       return isArabic
-          ? '🗺️ الأماكن القريبة من ${place.name} هتظهر في صفحة المكان تحت الخريطة. أو من شاشة Discover استكشف أماكن قريبة بالعافية.'
-          : '🗺️ Nearby spots from ${place.name} are listed on the Place Details page under the map. The Discover screen also surfaces close-by places with current open status.';
+          ? '🗺️ الأماكن القريبة من ${place.nameEn} هتظهر في صفحة المكان تحت الخريطة. أو من شاشة Discover استكشف أماكن قريبة بالعافية.'
+          : '🗺️ Nearby spots from ${place.nameEn} are listed on the Place Details page under the map. The Discover screen also surfaces close-by places with current open status.';
     }
     if (lower.contains('parking') ||
         lower.contains('باص') ||
@@ -420,15 +420,15 @@ $userText''';
         lower.contains('park') ||
         lower.contains('مترو')) {
       return isArabic
-          ? '🚗 ${place.name} - الوصول: ${place.address}.\nفي الغالب فيه مواقف سيارات قريبة. تقدر تستخدم "الذهاب" في الخريطة للوصول من موقعك.'
-          : '🚗 ${place.name} access: ${place.address}.\nThere\'s usually nearby parking. Use the "Go" button on the map for turn-by-turn directions.';
+          ? '🚗 ${place.nameEn} - الوصول: ${place.address}.\nفي الغالب فيه مواقف سيارات قريبة. تقدر تستخدم "الذهاب" في الخريطة للوصول من موقعك.'
+          : '🚗 ${place.nameEn} access: ${place.address}.\nThere\'s usually nearby parking. Use the "Go" button on the map for turn-by-turn directions.';
     }
     final description =
         isArabic &&
             place.descriptionAr != null &&
             place.descriptionAr!.isNotEmpty
         ? place.descriptionAr!
-        : place.description;
+        : place.descriptionEn;
     final localHour = DateTime.now().hour;
     final liveHint = (localHour >= 8 && localHour <= 10)
         ? (isArabic ? '⏰ دلوقتي ذروة — الزحمة كبيرة.' : '⏰ Rush hour right now — traffic is heavy.')

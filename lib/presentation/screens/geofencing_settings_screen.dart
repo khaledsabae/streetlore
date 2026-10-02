@@ -98,7 +98,9 @@ class GeofencingSettingsScreen extends StatelessWidget {
                         (a) => a.placeId == place.id,
                         orElse: () => GeofenceAlert(
                           placeId: place.id,
-                          placeName: place.name,
+                          placeName: place.localizedName(
+                            Localizations.localeOf(context).languageCode,
+                          ),
                           lat: place.lat,
                           lng: place.lng,
                         ),
@@ -137,7 +139,9 @@ class GeofencingSettingsScreen extends StatelessWidget {
                       (a) => a.placeId == place.id,
                       orElse: () => GeofenceAlert(
                         placeId: place.id,
-                        placeName: place.name,
+                        placeName: place.localizedName(
+                          Localizations.localeOf(context).languageCode,
+                        ),
                         lat: place.lat,
                         lng: place.lng,
                       ),
@@ -258,7 +262,9 @@ class _PlaceToggle extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      place.name,
+                      place.localizedName(
+                        Localizations.localeOf(context).languageCode,
+                      ),
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,

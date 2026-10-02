@@ -518,7 +518,10 @@ class _PlaceSelector extends StatelessWidget {
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Text(
-                                      p.name,
+                                      p.localizedName(
+                                        Localizations.localeOf(context)
+                                            .languageCode,
+                                      ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(

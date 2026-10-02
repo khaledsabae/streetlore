@@ -70,7 +70,9 @@ class _TourDetailsScreenState extends State<TourDetailsScreen>
         builder: (context) => MapScreen(
           destinationLat: firstPlace.lat,
           destinationLng: firstPlace.lng,
-          placeName: firstPlace.name,
+          placeName: firstPlace.localizedName(
+            Localizations.localeOf(context).languageCode,
+          ),
         ),
       ),
     );

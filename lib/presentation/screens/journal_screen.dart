@@ -322,10 +322,18 @@ class _PlacePickerSheetState extends State<_PlacePickerSheet> {
   @override
   Widget build(BuildContext context) {
     final term = _search.text.toLowerCase().trim();
+    bool matches(String? s) =>
+        s != null && s.toLowerCase().contains(term);
     final filtered = term.isEmpty
         ? widget.places
         : widget.places
-              .where((p) => p.name.toLowerCase().contains(term))
+              .where(
+                (p) =>
+                    matches(p.nameEn) ||
+                    matches(p.nameAr) ||
+                    matches(p.descriptionEn) ||
+                    matches(p.descriptionAr),
+              )
               .toList();
     return DraggableScrollableSheet(
       expand: false,
@@ -431,10 +439,16 @@ class _PlacePickerSheetState extends State<_PlacePickerSheet> {
                         ),
                       ),
                       title: Text(
-                        p.name,
+                        p.localizedName(
+                          Localizations.localeOf(context).languageCode,
+                        ),
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
-                      subtitle: Text(p.category),
+                      subtitle: Text(
+                        p.localizedCategory(
+                          Localizations.localeOf(context).languageCode,
+                        ),
+                      ),
                       onTap: () {
                         HapticFeedback.lightImpact();
                         Navigator.pop(context, p);
@@ -522,7 +536,9 @@ class _JournalEditorSheetState extends State<_JournalEditorSheet> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  widget.place.name,
+                  widget.place.localizedName(
+                    Localizations.localeOf(context).languageCode,
+                  ),
                   style: TextStyle(
                     color: context.textSec,
                     fontSize: 13,
@@ -586,7 +602,9 @@ class _JournalEditorSheetState extends State<_JournalEditorSheet> {
                       final entry = JournalEntry(
                         id: widget.existing?.id ?? const Uuid().v4(),
                         placeId: widget.place.id,
-                        placeName: widget.place.name,
+                        placeName: widget.place.localizedName(
+                          Localizations.localeOf(context).languageCode,
+                        ),
                         note: _noteCtrl.text.trim().isEmpty
                             ? null
                             : _noteCtrl.text.trim(),

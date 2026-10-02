@@ -34,9 +34,9 @@ enum PriceLevel {
 
 class PlaceModel {
   final String id;
-  final String name;
+  final String nameEn;
   final String? nameAr;
-  final String description;
+  final String descriptionEn;
   final String? descriptionAr;
   final String imageUrl;
   final List<String> imageUrls;
@@ -55,27 +55,20 @@ class PlaceModel {
   final bool isHiddenGem;
   final int? priceLocalEgp;
   final int? priceForeignerEgp;
-  
-  
-  
+
   final Map<String, int>? bestTimeOverride;
-  
-  
+
   final String? bestTimeNote;
-  
-  
-  
-  
+
   final String? bestTimeToVisit;
-  
-  
+
   final bool isIndoor;
 
   const PlaceModel({
     required this.id,
-    required this.name,
+    required this.nameEn,
     this.nameAr,
-    required this.description,
+    required this.descriptionEn,
     this.descriptionAr,
     required this.imageUrl,
     this.imageUrls = const <String>[],
@@ -100,15 +93,14 @@ class PlaceModel {
     this.isIndoor = false,
   });
 
-  
   String _pick(String en, String? ar, String locale) {
     if (locale == 'ar' && ar != null && ar.isNotEmpty) return ar;
     return en;
   }
 
-  String localizedName(String locale) => _pick(name, nameAr, locale);
+  String localizedName(String locale) => _pick(nameEn, nameAr, locale);
   String localizedDescription(String locale) =>
-      _pick(description, descriptionAr, locale);
+      _pick(descriptionEn, descriptionAr, locale);
   String localizedCategory(String locale) => _pick(category, categoryAr, locale);
   String localizedAddress(String locale) => _pick(address, addressAr, locale);
   String localizedPriceNote(String locale) =>
@@ -153,9 +145,17 @@ class PlaceModel {
     }
     return PlaceModel(
       id: json['id'] as String,
-      name: json['name'] as String,
-      nameAr: json['name_ar'] as String? ?? json['nameAr'] as String?,
-      description: json['description'] as String,
+      nameEn: (json['name_en'] as String?) ??
+          (json['name'] as String?) ??
+          (json['nameEn'] as String?) ??
+          '',
+      nameAr:
+          json['name_ar'] as String? ??
+          json['nameAr'] as String?,
+      descriptionEn: (json['description_en'] as String?) ??
+          (json['description'] as String?) ??
+          (json['descriptionEn'] as String?) ??
+          '',
       descriptionAr:
           json['description_ar'] as String? ?? json['descriptionAr'] as String?,
       imageUrl: json['imageUrl'] as String,
@@ -185,9 +185,9 @@ class PlaceModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
+      'name_en': nameEn,
       'name_ar': nameAr,
-      'description': description,
+      'description_en': descriptionEn,
       'description_ar': descriptionAr,
       'imageUrl': imageUrl,
       'rating': rating,
@@ -214,9 +214,9 @@ class PlaceModel {
 
   PlaceModel copyWith({
     String? id,
-    String? name,
+    String? nameEn,
     String? nameAr,
-    String? description,
+    String? descriptionEn,
     String? descriptionAr,
     String? imageUrl,
     double? rating,
@@ -241,9 +241,9 @@ class PlaceModel {
   }) {
     return PlaceModel(
       id: id ?? this.id,
-      name: name ?? this.name,
+      nameEn: nameEn ?? this.nameEn,
       nameAr: nameAr ?? this.nameAr,
-      description: description ?? this.description,
+      descriptionEn: descriptionEn ?? this.descriptionEn,
       descriptionAr: descriptionAr ?? this.descriptionAr,
       imageUrl: imageUrl ?? this.imageUrl,
       rating: rating ?? this.rating,

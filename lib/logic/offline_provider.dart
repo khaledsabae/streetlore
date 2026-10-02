@@ -208,7 +208,7 @@ class OfflineProvider extends ChangeNotifier {
       return DownloadEmpty(
         OfflinePack(
           id: 'single_${place.id}',
-          name: place.name,
+          name: place.nameEn,
           description: 'Single-place offline download',
           placeIds: const [],
           categories: const [],

@@ -85,8 +85,14 @@ class TourProvider extends ChangeNotifier {
   PlaceModel _placeFromSupabaseJson(Map<String, dynamic> json) {
     return PlaceModel(
       id: (json['id'] as String?) ?? '',
-      name: (json['name'] as String?) ?? 'Unknown Place',
-      description: (json['description'] as String?) ?? '',
+      nameEn: (json['name_en'] as String?) ??
+          (json['name'] as String?) ??
+          'Unknown Place',
+      nameAr: json['name_ar'] as String?,
+      descriptionEn: (json['description_en'] as String?) ??
+          (json['description'] as String?) ??
+          '',
+      descriptionAr: json['description_ar'] as String?,
 
       imageUrl:
           (json['image_url'] as String?) ?? (json['imageUrl'] as String?) ?? '',

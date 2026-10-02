@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../core/animations/app_animations.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/shimmer_image.dart';
 import '../../data/models/place_model.dart';
+import '../../logic/locale_provider.dart';
 
 class FeaturedCard extends StatelessWidget {
   final PlaceModel place;
@@ -13,6 +15,8 @@ class FeaturedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localeCode =
+        context.watch<LocaleProvider>().locale.languageCode;
     return PressScale(
       onTap: () {
         HapticFeedback.lightImpact();
@@ -92,7 +96,7 @@ class FeaturedCard extends StatelessWidget {
                     ),
                   ),
                   child: Text(
-                    place.category,
+                    place.localizedCategory(localeCode),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 9,
@@ -131,7 +135,7 @@ class FeaturedCard extends StatelessWidget {
                         child: Material(
                           type: MaterialType.transparency,
                           child: Text(
-                            place.name,
+                            place.localizedName(localeCode),
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 15,

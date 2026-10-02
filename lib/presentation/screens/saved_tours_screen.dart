@@ -221,7 +221,9 @@ class _SavedPlacesTab extends StatelessWidget {
                       SnackBar(
                         content: Text(
                           context.tr('removed_from_saved', {
-                            'name': place.name,
+                            'name': place.localizedName(
+                              Localizations.localeOf(context).languageCode,
+                            ),
                           }),
                         ),
                         action: SnackBarAction(

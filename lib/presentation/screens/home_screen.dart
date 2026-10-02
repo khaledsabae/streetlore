@@ -122,22 +122,37 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   List<PlaceModel> _categoryFiltered(List<PlaceModel> all) {
     if (_selectedCategory == 'All') return all;
-    return all.where((p) => p.category == _selectedCategory).toList();
+    return all
+        .where(
+          (p) =>
+              p.category == _selectedCategory ||
+              p.categoryAr == _selectedCategory,
+        )
+        .toList();
   }
 
   String get _searchTerm => _searchQuery.trim().toLowerCase();
 
   bool get _isSearching => _searchTerm.isNotEmpty;
 
-  List<PlaceModel> _searchResults(List<PlaceModel> all) => all
-      .where(
-        (p) =>
-            p.name.toLowerCase().contains(_searchTerm) ||
-            p.description.toLowerCase().contains(_searchTerm) ||
-            p.category.toLowerCase().contains(_searchTerm) ||
-            p.address.toLowerCase().contains(_searchTerm),
-      )
-      .toList();
+  List<PlaceModel> _searchResults(List<PlaceModel> all) {
+    final term = _searchTerm;
+    bool matches(String? s) =>
+        s != null && s.toLowerCase().contains(term);
+    return all
+        .where(
+          (p) =>
+              matches(p.nameEn) ||
+              matches(p.nameAr) ||
+              matches(p.descriptionEn) ||
+              matches(p.descriptionAr) ||
+              matches(p.category) ||
+              matches(p.categoryAr) ||
+              matches(p.address) ||
+              matches(p.addressAr),
+        )
+        .toList();
+  }
 
   List<PlaceModel> _filtered(List<PlaceModel> all) {
     final base = _isSearching ? _searchResults(all) : _categoryFiltered(all);

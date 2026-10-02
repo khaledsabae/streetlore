@@ -193,7 +193,7 @@ class PlaceProvider extends ChangeNotifier {
       ..sort((a, b) {
         final byCat = a.category.compareTo(b.category);
         if (byCat != 0) return byCat;
-        return a.name.compareTo(b.name);
+        return a.nameEn.compareTo(b.nameEn);
       });
     _places = List<PlaceModel>.unmodifiable(merged);
     notifyListeners();
@@ -209,7 +209,7 @@ class PlaceProvider extends ChangeNotifier {
     if (!_hasValidCoords(model.lat, model.lng)) {
       debugPrint(
         'PlaceProvider._placeFromSupabase: filtered place '
-        'id=${model.id} name="${model.name}" with bad '
+        'id=${model.id} name="${model.nameEn}" with bad '
         'coords lat=${model.lat} lng=${model.lng}',
       );
     }
@@ -471,24 +471,31 @@ PlaceModel placeModelFromSupabaseRow(Map<String, dynamic> json) {
   }
   return PlaceModel(
     id: (json['id'] ?? '').toString(),
-    name: (json['name'] ?? '').toString(),
-    nameAr: json['name_ar']?.toString(),
-    description: (json['description'] ?? '').toString(),
-    descriptionAr: json['description_ar']?.toString(),
+    nameEn: (json['name_en'] ?? json['name'] ?? '').toString(),
+    nameAr:
+        json['name_ar']?.toString() ?? json['nameAr']?.toString(),
+    descriptionEn:
+        (json['description_en'] ?? json['description'] ?? '').toString(),
+    descriptionAr:
+        json['description_ar']?.toString() ??
+        json['descriptionAr']?.toString(),
     imageUrl: (json['image_url'] ?? '').toString(),
     imageUrls: urls,
     rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
     category: (json['category'] ?? 'General').toString(),
-    categoryAr: json['category_ar']?.toString(),
+    categoryAr:
+        json['category_ar']?.toString() ?? json['categoryAr']?.toString(),
     lat: (json['lat'] as num?)?.toDouble() ?? 0.0,
     lng: (json['lng'] as num?)?.toDouble() ?? 0.0,
     address: (json['address'] ?? 'Alexandria, Egypt').toString(),
-    addressAr: json['address_ar']?.toString(),
+    addressAr:
+        json['address_ar']?.toString() ?? json['addressAr']?.toString(),
     openHours: (json['open_hours'] ?? '9:00 AM - 6:00 PM').toString(),
     reviewCount: (json['review_count'] as int?) ?? 0,
     priceLevel: _priceLevelFromStringShared(json['price_level']?.toString()),
     priceNote: (json['price_note'] ?? '').toString(),
-    priceNoteAr: json['price_note_ar']?.toString(),
+    priceNoteAr:
+        json['price_note_ar']?.toString() ?? json['priceNoteAr']?.toString(),
     isHiddenGem: (json['is_hidden_gem'] as bool?) ?? false,
     priceLocalEgp: json['price_local_egp'] as int?,
     priceForeignerEgp: json['price_foreigner_egp'] as int?,

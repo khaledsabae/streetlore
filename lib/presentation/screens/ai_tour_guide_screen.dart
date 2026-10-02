@@ -84,7 +84,9 @@ class _AITourGuideScreenState extends State<AITourGuideScreen> {
               ),
             ),
             Text(
-              widget.place.name,
+              widget.place.localizedName(
+                Localizations.localeOf(context).languageCode,
+              ),
               style: TextStyle(
                 fontSize: 18,
                 color: context.textPri,
@@ -146,7 +148,9 @@ class _AITourGuideScreenState extends State<AITourGuideScreen> {
               onSubmitted: (_) => _send(),
               decoration: InputDecoration(
                 hintText: context.tr('tour_guide_hint', {
-                  'name': widget.place.name,
+                  'name': widget.place.localizedName(
+                    Localizations.localeOf(context).languageCode,
+                  ),
                 }),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(22),

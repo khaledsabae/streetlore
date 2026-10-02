@@ -301,8 +301,8 @@ class _MapViewScreenState extends State<MapViewScreen> {
                               (p) => p.id == hotel.id,
                               orElse: () => PlaceModel(
                                 id: hotel.id,
-                                name: hotel.name,
-                                description: hotel.address,
+                                nameEn: hotel.name,
+                                descriptionEn: hotel.address,
                                 imageUrl: '',
                                 rating: 5.0,
                                 category: 'Hotels',
@@ -523,7 +523,9 @@ class _SelectedPlaceCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  place.name,
+                  place.localizedName(
+                    Localizations.localeOf(context).languageCode,
+                  ),
                   style: TextStyle(
                     color: context.textPri,
                     fontSize: 15,

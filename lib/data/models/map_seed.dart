@@ -329,9 +329,9 @@ List<PlaceModel> _hotelPlaces = _hotels
     .map(
       (poi) => PlaceModel(
         id: poi.id,
-        name: poi.name,
+        nameEn: poi.name,
         nameAr: null,
-        description:
+        descriptionEn:
             '${poi.brand ?? "Hotel"} is one of Alexandria\'s well-known '
             'stays, located at ${poi.address}. ${poi.stars != null ? "${poi.stars}-star rating. " : ""}'
             'Tap Save to bookmark, or tap Check-in when you arrive.',

@@ -136,7 +136,9 @@ class _PlacesList extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        p.name,
+                        p.localizedName(
+                          Localizations.localeOf(context).languageCode,
+                        ),
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 14,
