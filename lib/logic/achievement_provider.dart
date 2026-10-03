@@ -266,6 +266,11 @@ class AchievementProvider extends ChangeNotifier {
     );
     if (shouldUnlock && !wasUnlocked) {
       _grantBadge(def);
+    } else if (!shouldUnlock && wasUnlocked) {
+      // v1.0.63: revoke — the underlying stat dropped back below the
+      // required target (e.g. user un-visited a place, placesVisited
+      // went 1 → 0, first_steps' target of 1 is no longer met).
+      _revokeBadge(def);
     }
     if (current != wasCurrent) {
       _save();
@@ -285,6 +290,10 @@ class AchievementProvider extends ChangeNotifier {
         pointsAwarded: def.points,
       ),
     );
+  }
+
+  void _revokeBadge(AchievementDefinition def) {
+    gam.removeBadgeIfPresent(def.id);
   }
 
   String _iconName(IconData icon) {

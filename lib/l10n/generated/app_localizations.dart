@@ -566,6 +566,24 @@ abstract class AppLocalizations {
   /// **'Check-in removed'**
   String get checkin_removed;
 
+  /// Translation key: unvisit_title
+  ///
+  /// In en, this message translates to:
+  /// **'Remove check-in?'**
+  String get unvisit_title;
+
+  /// Translation key: unvisit_body
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove your check-in, deduct the points, and revoke any badges that were unlocked by it.'**
+  String get unvisit_body;
+
+  /// Translation key: unvisit_confirm
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get unvisit_confirm;
+
   /// Translation key: choose_gallery
   ///
   /// In en, this message translates to:

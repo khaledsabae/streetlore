@@ -187,10 +187,7 @@ class SupabaseService {
       return (ok: false, error: null);
     }
     try {
-      
-      
-      
-      
+
       await _client!.from('place_checkins').insert({
         'user_id': userId,
         'place_id': placeId,
@@ -202,8 +199,6 @@ class SupabaseService {
       return (ok: false, error: e);
     } catch (e) {
       _logError('registerCheckin($userId, $placeId)', e);
-      
-      
       return (
         ok: false,
         error: PostgrestException(
@@ -213,6 +208,28 @@ class SupabaseService {
           hint: null,
         ),
       );
+    }
+  }
+
+  /// v1.0.63: drop a previously-registered check-in for the given
+  /// (user, place) pair. Used by the "Un-visit" button on Place Details.
+  /// Returns true if the row was deleted (or there was nothing to delete),
+  /// false on hard DB error.
+  Future<bool> deleteCheckin(String userId, String placeId) async {
+    if (_client == null || userId.isEmpty || placeId.isEmpty) return true;
+    try {
+      await _client!
+          .from('place_checkins')
+          .delete()
+          .eq('user_id', userId)
+          .eq('place_id', placeId);
+      return true;
+    } on PostgrestException catch (e) {
+      _logError('deleteCheckin($userId, $placeId)', e);
+      return false;
+    } catch (e) {
+      _logError('deleteCheckin($userId, $placeId)', e);
+      return false;
     }
   }
 

@@ -295,6 +295,17 @@ class AppStrings {
       'en': 'Check-in removed',
       'ar': 'تم إلغاء تسجيل الزيارة',
     },
+    'unvisit_title': {
+      'en': 'Remove check-in?',
+      'ar': 'إلغاء تسجيل الزيارة؟',
+    },
+    'unvisit_body': {
+      'en':
+          'This will remove your check-in, deduct the points, and revoke any badges that were unlocked by it.',
+      'ar':
+          'ده هيلغي تسجيل الزيارة ويخصم من نقاطك ويلغي أي شارة اتفتحت بسببها.',
+    },
+    'unvisit_confirm': {'en': 'Remove', 'ar': 'إلغاء'},
     'go': {'en': 'Go', 'ar': 'اذهب'},
     'checkin': {'en': 'Check-in', 'ar': 'تسجيل زيارة'},
     'checked_in_streak': {

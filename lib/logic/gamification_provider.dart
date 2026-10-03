@@ -245,6 +245,85 @@ class GamificationProvider extends ChangeNotifier {
     return null;
   }
 
+  /// Undo a previously-applied gamification action. v1.0.63 — used by the
+  /// "Un-visit" button on Place Details when the user accidentally
+  /// checks in.
+  ///
+  /// Decrements the matching counter (placesVisited / reviewsPosted /
+  /// photosUploaded) and claws back the points that the action originally
+  /// awarded. Then re-runs the catalog achievement re-evaluation so any
+  /// badge whose target is no longer reachable is revoked.
+  ///
+  /// Returns true if any state actually changed (so the caller can decide
+  /// whether to surface UI feedback).
+  Future<bool> reverseAction(String action, {String? placeId}) async {
+    final pts = GamificationStats.pointsFor(action);
+    if (pts == 0) return false;
+
+    final newPlacesVisited = action == 'check_in'
+        ? (_stats.placesVisited - 1).clamp(0, 1 << 30)
+        : _stats.placesVisited;
+    final newReviewsPosted = action == 'review'
+        ? (_stats.reviewsPosted - 1).clamp(0, 1 << 30)
+        : _stats.reviewsPosted;
+    final newPhotosUploaded = action == 'photo'
+        ? (_stats.photosUploaded - 1).clamp(0, 1 << 30)
+        : _stats.photosUploaded;
+    final newPoints = (_stats.totalPoints - pts).clamp(0, 1 << 30).toInt();
+
+    final before = (
+      placesVisited: _stats.placesVisited,
+      reviewsPosted: _stats.reviewsPosted,
+      photosUploaded: _stats.photosUploaded,
+      totalPoints: _stats.totalPoints,
+    );
+
+    if (newPlacesVisited == before.placesVisited &&
+        newReviewsPosted == before.reviewsPosted &&
+        newPhotosUploaded == before.photosUploaded &&
+        newPoints == before.totalPoints) {
+      return false;
+    }
+
+    _stats = _stats.copyWith(
+      totalPoints: newPoints,
+      level: GamificationStats.levelForPoints(newPoints),
+      placesVisited: newPlacesVisited,
+      reviewsPosted: newReviewsPosted,
+      photosUploaded: newPhotosUploaded,
+      badges: _stats.badges,
+    );
+
+    // Catalog re-evaluation will flip any badge whose target is now
+    // unreachable to unlocked=false; _updateProgress in AchievementProvider
+    // calls gam.removeBadgeIfPresent(...) to actually drop it from the list
+    // and claw back its points.
+    _achievements?.refreshFromStats();
+
+    // Pull back any badges the achievement provider just revoked.
+    _stats = _stats.copyWith(badges: _stats.badges);
+
+    await _save();
+    notifyListeners();
+
+    if (action == 'check_in' && placeId != null && placeId.isNotEmpty) {
+      final userId =
+          SupabaseService.instance.clientOrNull?.auth.currentUser?.id ?? '';
+      if (userId.isNotEmpty) {
+        try {
+          await SupabaseService.instance.deleteCheckin(userId, placeId);
+        } catch (e) {
+          debugPrint(
+            'GamificationProvider.reverseAction: deleteCheckin FAILED '
+            'for userId=$userId placeId=$placeId -> $e',
+          );
+        }
+      }
+    }
+
+    return true;
+  }
+
   Badge? _levelBadge(String level) {
     return Badge(
       id: 'lvl_$level',
@@ -287,6 +366,26 @@ class GamificationProvider extends ChangeNotifier {
       level: GamificationStats.levelForPoints(
         _stats.totalPoints + badge.pointsAwarded,
       ),
+    );
+    await _save();
+    notifyListeners();
+  }
+
+  /// Remove a badge by id and claw back its points. Safe to call when the
+  /// badge is not present (no-op). Used by AchievementProvider when the
+  /// underlying stat drops below the threshold that earned the badge.
+  Future<void> removeBadgeIfPresent(String badgeId) async {
+    final idx = _stats.badges.indexWhere((b) => b.id == badgeId);
+    if (idx < 0) return;
+    final removed = _stats.badges[idx];
+    final remaining = [..._stats.badges]..removeAt(idx);
+    final clawback = removed.pointsAwarded;
+    final newPoints =
+        (_stats.totalPoints - clawback).clamp(0, 1 << 30).toInt();
+    _stats = _stats.copyWith(
+      badges: remaining,
+      totalPoints: newPoints,
+      level: GamificationStats.levelForPoints(newPoints),
     );
     await _save();
     notifyListeners();

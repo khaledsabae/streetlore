@@ -677,22 +677,10 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                           return;
                                         }
                                       } else {
-                                        
-                                        
-                                        
-                                        
-                                        
-                                        
-                                        
-                                        
-                                        
-                                        
-                                        
-                                        
-                                        
-                                        
                                         final placeProvider = context
                                             .read<PlaceProvider>();
+                                        final gamification = context
+                                            .read<GamificationProvider>();
                                         final messenger = ScaffoldMessenger.of(
                                           context,
                                         );
@@ -700,8 +688,7 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                             .client.auth
                                             .currentUser
                                             ?.id;
-                                        if (userId == null ||
-                                            userId.isEmpty) {
+                                        if (userId == null || userId.isEmpty) {
                                           if (!context.mounted) return;
                                           messenger.showSnackBar(
                                             SnackBar(
@@ -714,88 +701,77 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                           );
                                           return;
                                         }
-                                        
-                                        
-                                        setState(
-                                          () => _isVisited = false,
+
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            title: Text(context.tr('unvisit_title')),
+                                            content: Text(context.tr('unvisit_body')),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(ctx, false),
+                                                child: Text(context.tr('cancel')),
+                                              ),
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(ctx, true),
+                                                child: Text(
+                                                  context.tr('unvisit_confirm'),
+                                                  style: const TextStyle(
+                                                    color: AppColors.error,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
                                         );
+                                        if (confirm != true) return;
+                                        if (!mounted) return;
+
+                                        setState(() => _isVisited = false);
                                         try {
-                                          await Supabase.instance.client
-                                              .from('place_checkins')
-                                              .delete()
-                                              .eq('user_id', userId)
-                                              .eq('place_id', place.id);
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          
-                                          placeProvider
-                                              .fetchRemoteCounts(userId);
+                                          // v1.0.63: decrement stats, claw back points, and
+                                          // re-evaluate achievements so any badge unlocked by
+                                          // this single check-in is revoked.
+                                          await gamification.reverseAction(
+                                            'check_in',
+                                            placeId: place.id,
+                                          );
+                                          if (context.mounted) {
+                                            try {
+                                              final tp = context.read<TripProvider>();
+                                              tp.unmarkVisited(place.id);
+                                            } catch (_) {}
+                                          }
+                                          await placeProvider.fetchRemoteCounts(userId);
                                           if (!context.mounted) return;
                                           messenger.showSnackBar(
                                             SnackBar(
                                               content: Row(
                                                 children: [
                                                   const Icon(
-                                                    Icons
-                                                        .cancel_rounded,
+                                                    Icons.cancel_rounded,
                                                     color: Colors.white,
                                                     size: 18,
                                                   ),
                                                   const SizedBox(width: 8),
-                                                  Text(
-                                                    context.tr(
-                                                      'checkin_removed',
-                                                    ),
+                                                  Expanded(
+                                                    child: Text(context.tr('checkin_removed')),
                                                   ),
                                                 ],
                                               ),
-                                              backgroundColor:
-                                                  AppColors.success,
-                                              duration: const Duration(
-                                                seconds: 2,
-                                              ),
-                                            ),
-                                          );
-                                        } on PostgrestException catch (e) {
-                                          
-                                          
-                                          
-                                          if (!context.mounted) return;
-                                          setState(
-                                            () => _isVisited = true,
-                                          );
-                                          messenger.showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Could not remove '
-                                                'check-in: '
-                                                '[${e.code ?? ""}] '
-                                                '${e.message}',
-                                              ),
-                                              backgroundColor: Colors.red,
-                                              duration: const Duration(
-                                                seconds: 6,
-                                              ),
+                                              backgroundColor: AppColors.success,
+                                              duration: const Duration(seconds: 2),
                                             ),
                                           );
                                         } catch (e) {
                                           if (!context.mounted) return;
-                                          setState(
-                                            () => _isVisited = true,
-                                          );
+                                          setState(() => _isVisited = true);
                                           messenger.showSnackBar(
                                             SnackBar(
-                                              content: Text(
-                                                'Could not remove '
-                                                'check-in: $e',
-                                              ),
+                                              content: Text('Could not remove check-in: $e'),
                                               backgroundColor: Colors.red,
-                                              duration: const Duration(
-                                                seconds: 6,
-                                              ),
+                                              duration: const Duration(seconds: 6),
                                             ),
                                           );
                                         }

@@ -58,6 +58,14 @@ class TripProvider extends ChangeNotifier {
     if (_visitedPlaceIds.add(placeId)) notifyListeners();
   }
 
+  /// v1.0.63: drop the visited marker (called from PlaceDetails when the
+  /// user un-visits a place so the Trip Planner badge disappears
+  /// immediately, without waiting for a Supabase round-trip).
+  void unmarkVisited(String placeId) {
+    if (placeId.isEmpty) return;
+    if (_visitedPlaceIds.remove(placeId)) notifyListeners();
+  }
+
   bool isInTrip(String id) {
     return _tripPlaces.any((place) => place.id == id);
   }

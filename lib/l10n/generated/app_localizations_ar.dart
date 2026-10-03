@@ -261,6 +261,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get checkin_removed => 'تم إلغاء تسجيل الزيارة';
 
   @override
+  String get unvisit_title => 'إلغاء تسجيل الزيارة؟';
+
+  @override
+  String get unvisit_body =>
+      'ده هيلغي تسجيل الزيارة ويخصم من نقاطك ويلغي أي شارة اتفتحت بسببها.';
+
+  @override
+  String get unvisit_confirm => 'إلغاء';
+
+  @override
   String get choose_gallery => 'اختر من المعرض';
 
   @override

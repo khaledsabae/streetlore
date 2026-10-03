@@ -261,6 +261,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get checkin_removed => 'Check-in removed';
 
   @override
+  String get unvisit_title => 'Remove check-in?';
+
+  @override
+  String get unvisit_body =>
+      'This will remove your check-in, deduct the points, and revoke any badges that were unlocked by it.';
+
+  @override
+  String get unvisit_confirm => 'Remove';
+
+  @override
   String get choose_gallery => 'Choose from gallery';
 
   @override
