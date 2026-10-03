@@ -66,6 +66,10 @@ class PlaceModel {
 
   final bool isIndoor;
 
+  final bool enableChat;
+
+  final bool enableGallery;
+
   const PlaceModel({
     required this.id,
     required this.nameEn,
@@ -94,6 +98,8 @@ class PlaceModel {
     this.bestTimeNote,
     this.bestTimeToVisit,
     this.isIndoor = false,
+    this.enableChat = true,
+    this.enableGallery = true,
   });
 
   String _pick(String en, String? ar, String locale) {
@@ -183,6 +189,8 @@ class PlaceModel {
       bestTimeNote: json['best_time_note'] as String?,
       bestTimeToVisit: json['best_time_to_visit'] as String?,
       isIndoor: json['is_indoor'] as bool? ?? false,
+      enableChat: (json['enable_chat'] as bool?) ?? true,
+      enableGallery: (json['enable_gallery'] as bool?) ?? true,
     );
   }
 
@@ -242,6 +250,8 @@ class PlaceModel {
     String? bestTimeNote,
     String? bestTimeToVisit,
     bool? isIndoor,
+    bool? enableChat,
+    bool? enableGallery,
   }) {
     return PlaceModel(
       id: id ?? this.id,
@@ -269,6 +279,8 @@ class PlaceModel {
       bestTimeNote: bestTimeNote ?? this.bestTimeNote,
       bestTimeToVisit: bestTimeToVisit ?? this.bestTimeToVisit,
       isIndoor: isIndoor ?? this.isIndoor,
+      enableChat: enableChat ?? this.enableChat,
+      enableGallery: enableGallery ?? this.enableGallery,
     );
   }
 }

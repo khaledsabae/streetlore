@@ -519,6 +519,8 @@ PlaceModel placeModelFromSupabaseRow(Map<String, dynamic> json) {
     bestTimeNote: json['best_time_note']?.toString(),
     bestTimeToVisit: json['best_time_to_visit']?.toString(),
     isIndoor: (json['is_indoor'] as bool?) ?? false,
+    enableChat: (json['enable_chat'] as bool?) ?? true,
+    enableGallery: (json['enable_gallery'] as bool?) ?? true,
   );
 }
 

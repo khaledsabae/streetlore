@@ -866,6 +866,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get nearby_gems => 'جواهر مخفية قريبة';
 
   @override
+  String get nearby_places => 'أماكن قريبة';
+
+  @override
+  String get trip_visited => 'تمت زيارتها';
+
+  @override
+  String get trip_planned => 'في الرحلة';
+
+  @override
+  String get trip_visited_badge => 'تمت الزيارة';
+
+  @override
   String get no_badges => 'سجّل زياراتك للأماكن لتكسب الشارات';
 
   @override

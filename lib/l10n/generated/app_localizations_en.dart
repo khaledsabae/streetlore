@@ -875,6 +875,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nearby_gems => 'Nearby Hidden Gems';
 
   @override
+  String get nearby_places => 'Nearby Places';
+
+  @override
+  String get trip_visited => 'Visited';
+
+  @override
+  String get trip_planned => 'Planned';
+
+  @override
+  String get trip_visited_badge => 'Visited';
+
+  @override
   String get no_badges => 'Check in at places to earn badges';
 
   @override

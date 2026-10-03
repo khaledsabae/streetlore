@@ -1700,6 +1700,30 @@ abstract class AppLocalizations {
   /// **'Nearby Hidden Gems'**
   String get nearby_gems;
 
+  /// Translation key: nearby_places
+  ///
+  /// In en, this message translates to:
+  /// **'Nearby Places'**
+  String get nearby_places;
+
+  /// Translation key: trip_visited
+  ///
+  /// In en, this message translates to:
+  /// **'Visited'**
+  String get trip_visited;
+
+  /// Translation key: trip_planned
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get trip_planned;
+
+  /// Translation key: trip_visited_badge
+  ///
+  /// In en, this message translates to:
+  /// **'Visited'**
+  String get trip_visited_badge;
+
   /// Translation key: no_badges
   ///
   /// In en, this message translates to:

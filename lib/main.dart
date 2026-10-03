@@ -46,6 +46,7 @@ Future<void> main() async {
 
   final placeProvider = PlaceProvider();
   final tourProvider = TourProvider();
+  final tripProvider = TripProvider();
   unawaited(placeProvider.loadPlaces());
   unawaited(tourProvider.loadTours());
 
@@ -77,6 +78,7 @@ Future<void> main() async {
       placeProvider.bootstrapForUser(userId),
       tourProvider.bootstrapForUser(userId),
       gamification.bootstrapForUser(userId),
+      tripProvider.refreshVisited(),
     ]);
     achievements.refreshFromStats();
   }
@@ -103,7 +105,7 @@ Future<void> main() async {
         ChangeNotifierProvider<AuthProvider>.value(value: auth),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => TripProvider()),
+        ChangeNotifierProvider<TripProvider>.value(value: tripProvider),
         ChangeNotifierProvider<PlaceProvider>.value(value: placeProvider),
         ChangeNotifierProvider<TourProvider>.value(value: tourProvider),
         ChangeNotifierProvider<GamificationProvider>.value(value: gamification),

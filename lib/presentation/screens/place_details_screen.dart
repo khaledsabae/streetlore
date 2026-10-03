@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +15,7 @@ import '../../logic/auth_provider.dart';
 import '../../logic/place_provider.dart';
 import '../../logic/review_provider.dart';
 import '../../logic/streak_provider.dart';
+import '../../logic/trip_provider.dart';
 import '../../logic/gamification_provider.dart';
 import '../../logic/locale_provider.dart';
 import '../../logic/offline_provider.dart';
@@ -112,21 +115,37 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
     if (!mounted) return;
     final allPlaces = context.read<PlaceProvider>().places;
     final current = widget.place;
+    final scored = <MapEntry<PlaceModel, double>>[];
+    for (final p in allPlaces) {
+      if (p.id == current.id) continue;
+      final d = _haversineKm(
+        current.lat,
+        current.lng,
+        p.lat,
+        p.lng,
+      );
+      if (d <= 5.0) scored.add(MapEntry(p, d));
+    }
+    scored.sort((a, b) => a.value.compareTo(b.value));
     setState(() {
       _nearby
         ..clear()
-        ..addAll(
-          allPlaces
-              .where(
-                (p) =>
-                    p.id != current.id &&
-                    (p.lat - current.lat).abs() < 0.05 &&
-                    (p.lng - current.lng).abs() < 0.05,
-              )
-              .take(4),
-        );
+        ..addAll(scored.take(8).map((e) => e.key));
     });
   }
+
+  double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
+    const r = 6371.0;
+    final dLat = _deg2rad(lat2 - lat1);
+    final dLon = _deg2rad(lon2 - lon1);
+    final a = (sin(dLat) / 2) * sin(dLat / 2) +
+        cos(_deg2rad(lat1)) * cos(_deg2rad(lat2)) *
+            (sin(dLon) / 2) * sin(dLon / 2);
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return r * c;
+  }
+
+  double _deg2rad(double d) => d * 3.141592653589793 / 180.0;
 
   @override
   void dispose() {
@@ -555,6 +574,14 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                                           'check_in',
                                           placeId: place.id,
                                         );
+                                        // v1.0.62: mark this place visited in
+                                        // TripProvider so the Trip Planner
+                                        // immediately shows the "Visited" badge.
+                                        if (context.mounted) {
+                                          context
+                                              .read<TripProvider>()
+                                              .markVisited(place.id);
+                                        }
                                         final newStreak =
                                             streak.currentStreak;
                                         setState(
@@ -993,9 +1020,13 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
                             ),
                           ),
 
-                          PlacePhotosSection(place: place),
-                          const SizedBox(height: 24),
-                          _ChatEntryCard(place: place),
+                          if (place.enableGallery)
+                            PlacePhotosSection(place: place),
+                          if (place.enableGallery)
+                            const SizedBox(height: 24)
+                          else
+                            const SizedBox(height: 8),
+                          if (place.enableChat) _ChatEntryCard(place: place),
                           _ReviewsSection(place: place),
 
                           if (_nearby.isNotEmpty)
@@ -1384,7 +1415,7 @@ class _NearbySection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
           child: Text(
-            context.tr('nearby_gems'),
+            context.tr('nearby_places'),
             style: TextStyle(
               color: textPri,
               fontSize: 18,
