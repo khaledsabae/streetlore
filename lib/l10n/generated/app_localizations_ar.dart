@@ -516,11 +516,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get free_banner_title => 'كل حاجة مجانية';
 
   @override
-  String get passion_banner_title => 'مشروع شغف غير ربحي';
+  String get passion_banner_title => 'بوصلة كل قصة تستاهل أن تُروى';
 
   @override
   String get passion_banner_sub =>
-      'مبني بحب الإسكندرية — ولأجلك. ببلاش، بدون إعلانات، ومتعة بحتة. كل توصية مجمّعة يدويًا من حد فعلاً عايش هنا.';
+      'دليلك لاكتشاف أعمق ما في المدن من حكايات وذكريات. بدون إعلانات، '
+      'بدون اشتراكات، وكل توصية هنا كتبها إنسان يعرف المكان عن قرب.';
 
   @override
   String get free_entry => 'دخول مجاني';

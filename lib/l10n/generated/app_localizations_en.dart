@@ -522,11 +522,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get free_banner_title => 'Everything is free';
 
   @override
-  String get passion_banner_title => 'A non-profit passion project';
+  String get passion_banner_title => 'A compass for every story worth telling';
 
   @override
   String get passion_banner_sub =>
-      'Built out of love for Alexandria — and for you. Free, ad-free, and made for fun. Every recommendation is hand-curated by someone who actually lives here.';
+      'Your guide to the deepest stories behind every city. Free, ad-free, '
+      'and made with care. Every recommendation here is written by someone '
+      'who knows the place up close.';
 
   @override
   String get free_entry => 'Free entry';

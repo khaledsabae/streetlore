@@ -116,11 +116,12 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    final String mapTileUrl = isDarkMode
-        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
-        : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    // Free public OSM tiles (no API key needed). Carto's basemaps.cartocdn.com
+    // now requires a key, so we use the OSM standard tiles for both themes.
+    // OSM attribution is rendered by FlutterMap automatically when the
+    // userAgentPackageName is set on TileLayer (see below).
+    final String mapTileUrl =
+        'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
     final destination = LatLng(widget.destinationLat, widget.destinationLng);
 

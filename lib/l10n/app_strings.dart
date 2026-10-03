@@ -183,17 +183,17 @@ class AppStrings {
       'ar': 'كل الجولات والأماكن والمرشدين متاحين للجميع.',
     },
     'passion_banner_title': {
-      'en': 'A non-profit passion project',
-      'ar': 'مشروع شغف غير ربحي',
+      'en': 'A compass for every story worth telling',
+      'ar': 'بوصلة كل قصة تستاهل أن تُروى',
     },
     'passion_banner_sub': {
       'en':
-          'Built out of love for Alexandria — and for you. Free, ad-free, '
-              'and made for fun. Every recommendation is hand-curated by '
-              'someone who actually lives here.',
+          'Your guide to the deepest stories behind every city. Free, ad-free, '
+              'and made with care. Every recommendation here is written by '
+              'someone who knows the place up close.',
       'ar':
-          'مبني بحب الإسكندرية — ولأجلك. ببلاش، بدون إعلانات، ومتعة بحتة. '
-              'كل توصية مجمّعة يدويًا من حد فعلاً عايش هنا.',
+          'دليلك لاكتشاف أعمق ما في المدن من حكايات وذكريات. بدون إعلانات، '
+              'بدون اشتراكات، وكل توصية هنا كتبها إنسان يعرف المكان عن قرب.',
     },
     'streak_start': {'en': 'Start your streak', 'ar': 'ابدأ سلسلتك'},
     'streak_days': {'en': '{n} visits streak', 'ar': 'ستريك {n} زيارة'},

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/animations/app_animations.dart';
+import '../../core/constants/app_version.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/animated_icons.dart';
@@ -955,12 +956,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _ActionTile(
                           icon: Icons.info_outline_rounded,
                           title: context.tr('about_app'),
-                          subtitle: context.tr('version'),
+                          subtitle: formatAppVersionLabel(),
                           color: context.textSec,
                           onTap: () => showAboutDialog(
                             context: context,
                             applicationName: 'Streetlore',
-                            applicationVersion: '2.0.0',
+                            applicationVersion: kAppVersionFull,
                             applicationIcon: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
