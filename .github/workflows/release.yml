@@ -105,24 +105,57 @@ jobs:
           fi
 
       - name: Verify keystore signature
+        env:
+          STREETLORE_KEYSTORE_PASSWORD: ${{ secrets.STREETLORE_KEYSTORE_PASSWORD }}
+          # After rotating the upload key, set the repo variable
+          # STREETLORE_CERT_SHA1 to the new certificate's SHA-1.
+          EXPECTED_SHA1: ${{ vars.STREETLORE_CERT_SHA1 || 'AF:62:89:44:B5:F3:A0:0A:4E:CE:1E:72:34:13:26:EA:5A:E7:B4:8F' }}
         run: |
           set -e
-          SHA=$(keytool -list -v -keystore android/app/release_v2.keystore -storepass streetlore2026 2>&1 | grep -E '^\s*SHA1:' | head -n 1 | awk '{print $2}')
-          echo "Keystore cert SHA-1: ${SHA}"
-          if [ "${SHA}" != "AF:62:89:44:B5:F3:A0:0A:4E:CE:1E:72:34:13:26:EA:5A:E7:B4:8F" ]; then
-            echo "::error::Cert SHA-1 is ${SHA} - expected the v1.0.30+ keystore cert. Refusing to publish."
+          if [ -z "${STREETLORE_KEYSTORE_PASSWORD}" ]; then
+            echo "::error::STREETLORE_KEYSTORE_PASSWORD secret is missing."
             exit 1
           fi
-          echo "Keystore cert matches the registered v1.0.30+ cert."
+          SHA=$(keytool -list -v -keystore android/app/release_v2.keystore -storepass "${STREETLORE_KEYSTORE_PASSWORD}" 2>&1 | grep -E '^\s*SHA1:' | head -n 1 | awk '{print $2}')
+          echo "Keystore cert SHA-1: ${SHA}"
+          if [ "${SHA}" != "${EXPECTED_SHA1}" ]; then
+            echo "::error::Cert SHA-1 is ${SHA} - expected ${EXPECTED_SHA1}. Refusing to publish."
+            exit 1
+          fi
+          echo "Keystore cert matches the expected cert."
 
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Test
+        run: |
+          if [ -d test ]; then
+            flutter test
+          else
+            echo "No test/ directory yet - skipping."
+          fi
+
       - name: Build APK (arm64, release)
+        env:
+          STREETLORE_KEYSTORE_PASSWORD: ${{ secrets.STREETLORE_KEYSTORE_PASSWORD }}
+          STREETLORE_KEY_PASSWORD: ${{ secrets.STREETLORE_KEY_PASSWORD }}
         run: |
           set -e
           flutter build apk --release \
             --target-platform android-arm64
+
+      - name: Build App Bundle (Google Play)
+        env:
+          STREETLORE_KEYSTORE_PASSWORD: ${{ secrets.STREETLORE_KEYSTORE_PASSWORD }}
+          STREETLORE_KEY_PASSWORD: ${{ secrets.STREETLORE_KEY_PASSWORD }}
+        run: |
+          set -e
+          flutter build appbundle --release
+          mv build/app/outputs/bundle/release/app-release.aab \
+             "build/app/outputs/bundle/release/streetlore-${{ steps.resolve_tag.outputs.tag }}.aab"
 
       - name: Compute APK hashes
         id: hashes
@@ -165,14 +198,17 @@ jobs:
             - SHA-256: `${{ steps.hashes.outputs.sha256 }}`
           files: |
             build/app/outputs/flutter-apk/streetlore-${{ steps.resolve_tag.outputs.tag }}-arm64.apk
+            build/app/outputs/bundle/release/streetlore-${{ steps.resolve_tag.outputs.tag }}.aab
           fail_on_unmatched_files: true
           draft: false
           prerelease: false
 
-      - name: Upload APK as workflow artifact (always)
+      - name: Upload APK + AAB as workflow artifact (always)
         uses: actions/upload-artifact@v4
         with:
-          name: streetlore-${{ steps.resolve_tag.outputs.tag }}-arm64
-          path: build/app/outputs/flutter-apk/streetlore-${{ steps.resolve_tag.outputs.tag }}-arm64.apk
+          name: streetlore-${{ steps.resolve_tag.outputs.tag }}
+          path: |
+            build/app/outputs/flutter-apk/streetlore-${{ steps.resolve_tag.outputs.tag }}-arm64.apk
+            build/app/outputs/bundle/release/streetlore-${{ steps.resolve_tag.outputs.tag }}.aab
           if-no-files-found: error
           retention-days: 14

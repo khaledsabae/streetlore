@@ -597,7 +597,7 @@ class AuthProvider extends ChangeNotifier {
         }
         if (e.code == '10') {
           debugPrint('CODE 10: SHA-1 fingerprint mismatch!');
-          debugPrint('Your applicationId: com.example.streetlore');
+          debugPrint('Your applicationId: com.streetlore.app');
           debugPrint('Check: Google Cloud Console > APIs > Credentials');
           debugPrint('Ensure SHA-1 fingerprint matches the release keystore');
           return 'sha1_mismatch';

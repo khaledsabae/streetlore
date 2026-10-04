@@ -1,4 +1,4 @@
-package com.example.streetlore
+package com.streetlore.app
 
 import io.flutter.embedding.android.FlutterActivity
 

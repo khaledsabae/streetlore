@@ -8,7 +8,7 @@
 # points or R8 strips them and the app crashes at runtime.
 
 # Keep our application class (default behaviour, but explicit).
--keep class com.example.streetlore.** { *; }
+-keep class com.streetlore.app.** { *; }
 
 # Flutter / Dart embedding
 -keep class io.flutter.app.** { *; }

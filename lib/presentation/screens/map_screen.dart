@@ -167,7 +167,7 @@ class _MapScreenState extends State<MapScreen> {
 
     try {
       final response = await http
-          .get(url, headers: const {'User-Agent': 'com.example.streetlore/1.0'})
+          .get(url, headers: const {'User-Agent': 'com.streetlore.app/1.0'})
           .timeout(const Duration(seconds: 12));
       if (!mounted) return;
       if (response.statusCode == 200) {
@@ -244,7 +244,7 @@ class _MapScreenState extends State<MapScreen> {
                   children: [
                     TileLayer(
                       urlTemplate: mapTileUrl,
-                      userAgentPackageName: 'com.example.streetlore',
+                      userAgentPackageName: 'com.streetlore.app',
                       subdomains: const ['a', 'b', 'c'],
                     ),
 

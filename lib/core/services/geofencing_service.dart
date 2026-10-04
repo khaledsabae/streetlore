@@ -24,6 +24,11 @@ class GeofencingService {
     const initSettings = InitializationSettings(android: androidInit);
     try {
       await _notifications.initialize(initSettings);
+      // Android 13+ needs a runtime grant or alerts are silently dropped.
+      await _notifications
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
       _initialised = true;
     } catch (e) {
       debugPrint('GeofencingService: notifications init failed: $e');

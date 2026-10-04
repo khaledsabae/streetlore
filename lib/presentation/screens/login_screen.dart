@@ -492,7 +492,7 @@ class _LoginScreenState extends State<LoginScreen>
                                         'Google sign-in failed (code 10).\n'
                                         'Likely cause: SHA-1 fingerprint mismatch.\n'
                                         'Add this Android debug SHA-1 to Google Cloud Console '
-                                        'OAuth client for com.example.streetlore.';
+                                        'OAuth client for com.streetlore.app.';
                                     showDetails = true;
                                   } else if (errorStr.contains('network') ||
                                       errorStr.contains('socket') ||
