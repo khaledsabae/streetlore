@@ -79,7 +79,8 @@
 
 | # | الخطأ | الدليل |
 |---|---|---|
-| B1 | **معادلة المسافة غلط:** `(sin(dLat) / 2) * sin(dLat / 2)` بدل `sin(dLat/2) * sin(dLat/2)` (ونفس الشيء لـdLon) → قائمة «القريب ≤5 كم» بمسافات غلط | `place_details_screen.dart:141,143` |
+| B1 | **«مفتوح الآن» غلط لمعظم الأماكن:** `MockData.isOpenNow` بيتجاهل مواعيد المكان وبيفترض 9ص–6م للكل (مكان بيقفل 10م بيظهر مقفول 7م) | `mock_data.dart:105`، `place_details_screen.dart:156` |
+| B1b | معادلة المسافة مكتوبة غلط (`(sin(dLat)/2)*sin(dLat/2)` بدل `sin(dLat/2)²`) — **لكن أثرها على مستوى المدينة مهمل** (2.315 كم في الحالتين)؛ بيظهر بس في المسافات الطويلة | `place_details_screen.dart:141,143` |
 | B2 | الـoffline fallback عمره ما بيشتغل في الإقلاع البارد: `OfflineProvider.cachedFallback` بيتملى بس لما تفتح شاشة الأوفلاين، فالتطبيق بيرجع لبيانات mock بدل كاش المستخدم | `place_provider.dart:121,152,162`، `offline_mode_screen.dart:24` |
 | B3 | 3 مصادر للأماكن بتندمج كل تحميل: Supabase + `mock_data` + 12 فندق hardcoded (بلا عربي)؛ وأي مكان برا مربع إسكندرية بيتشال بصمت؛ وفلتر «الأقرب» بيقيس من نقطة ثابتة مش GPS | `place_provider.dart:171,198-215,235-238,428`، `map_seed.dart:345-381` |
 | B4 | تسريبات: حساس البوصلة + timer كل 2ث مابيقفوش (`compass_card.dart:80,116-122`)؛ قناة realtime لكل شات بتتفتح ومابتتقفلش (`chat_provider.dart:22-30`)؛ اشتراك `onAuthStateChange` مش متلغي (`auth_provider.dart:69`) | |
@@ -137,10 +138,10 @@
 | تصحيح أرقام الطوارئ + "آخر تحقق: تاريخ" | محمد |
 
 ### المرحلة 2 — أساس الجودة (الأسابيع 3-6)
-- PR-F: إصلاح B1/B2/B4/B8/B12 + **أول 5 تستات**:
+- PR-F: إصلاح B1/B1b/B2/B4/B6/B8 + **أول تستات**:
   1. المسافة (`core/geo`) مقابل مسافات معروفة.
   2. ترتيب وفلترة الأماكن (`display_order`، الأرخص، المجاني، أقصى سعر).
-  3. `isOpenNow` (parsing مواعيد العمل).
+  3. `OpeningHours.isOpenAt` (parsing مواعيد العمل الحقيقية).
   4. النقاط ومستويات الإنجازات (`GamificationStats.levelForPoints`، `AchievementCatalog`).
   5. `SunTimesService.compute` و`BestTimeService.recommend`.
 - CI: `flutter analyze` + `flutter test` على كل PR، والبناء مايكملش لو فشلوا.
@@ -201,6 +202,16 @@ test/         نفس شكل lib/
 |---|---|
 | **كلود** (عبر fork + PRs) | PR-A (RLS)، PR-B (وسيط AI)، PR-C (إصدار Android)، PR-D (Auth)، PR-E (حذف الحساب + الخصوصية)، PR-F (الأخطاء + التستات). ترتيب الدفع: A → B → D → C → E → F |
 | **محمد** | أي تغيير على الأنظمة الحية (Supabase، Google Cloud، Play Console، ريبو الويب)، المفاتيح والـkeystore، مراجعة ودمج الـPRs، المحتوى والمزايا (الشات، الـattribution، الخرائط، الطقس، الطوارئ، الترجمة، تقسيم الشاشات) |
+
+### حالة الـPRs (2026-10-04)
+| PR | البند | يتدمج امتى |
+|---|---|---|
+| #2 | PR-A — RLS | أولًا، **بعد** تطبيق الميجريشن + إضافة نفسك في `admins` |
+| #3 | PR-B — وسيط AI | بعد إلغاء المفاتيح + deploy الفنكشن |
+| #4 | PR-D — Auth | في أي وقت |
+| #5 | PR-C — Android/AAB | بعد #3 (مبني فوقه)، وبعد تجهيز الـsecrets وOAuth |
+| #6 | PR-E — حذف الحساب + الخصوصية | بعد deploy الفنكشن وتعبئة `[CONTACT_EMAIL]` |
+| #7 | PR-F — أخطاء + تستات | في أي وقت |
 
 ### ✅ قائمة أفعال محمد اليدوية
 - [ ] إلغاء مفاتيح Gemini الخمسة وعمل مفتاح واحد جديد (يتحط في secrets الفنكشن بس)
