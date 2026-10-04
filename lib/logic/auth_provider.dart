@@ -64,9 +64,17 @@ class AuthProvider extends ChangeNotifier {
       ownerId == 'me' ||
       ownerId == currentUserId;
 
+  StreamSubscription<AuthState>? _authSub;
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
+
   AuthProvider() {
     if (AppConfig.supabaseEnabled) {
-      Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
         final event = data.event;
         if (event == AuthChangeEvent.signedIn ||
             event == AuthChangeEvent.tokenRefreshed) {

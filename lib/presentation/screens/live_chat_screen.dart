@@ -21,17 +21,20 @@ class LiveChatScreen extends StatefulWidget {
 class _LiveChatScreenState extends State<LiveChatScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  late final ChatProvider _chat;
 
   @override
   void initState() {
     super.initState();
+    _chat = context.read<ChatProvider>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatProvider>().load(widget.place.id);
+      _chat.load(widget.place.id);
     });
   }
 
   @override
   void dispose() {
+    _chat.leave(widget.place.id);
     _input.dispose();
     _scroll.dispose();
     super.dispose();

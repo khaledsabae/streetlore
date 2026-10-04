@@ -1,6 +1,7 @@
-import 'dart:math';
 
 import 'package:flutter/material.dart';
+import '../../core/geo/geo_utils.dart';
+import '../../core/utils/opening_hours.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,7 +10,6 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/app_image.dart';
 import '../../core/widgets/confetti_overlay.dart';
 import '../../core/widgets/shimmer_image.dart';
-import '../../data/mock_data.dart';
 import '../../data/models/place_model.dart';
 import '../../logic/auth_provider.dart';
 import '../../logic/place_provider.dart';
@@ -134,18 +134,9 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
     });
   }
 
-  double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
-    const r = 6371.0;
-    final dLat = _deg2rad(lat2 - lat1);
-    final dLon = _deg2rad(lon2 - lon1);
-    final a = (sin(dLat) / 2) * sin(dLat / 2) +
-        cos(_deg2rad(lat1)) * cos(_deg2rad(lat2)) *
-            (sin(dLon) / 2) * sin(dLon / 2);
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return r * c;
-  }
+  double _haversineKm(double lat1, double lon1, double lat2, double lon2) =>
+      haversineKm(lat1, lon1, lat2, lon2);
 
-  double _deg2rad(double d) => d * 3.141592653589793 / 180.0;
 
   @override
   void dispose() {
@@ -153,7 +144,8 @@ class _PlaceDetailsScreenState extends State<PlaceDetailsScreen>
     super.dispose();
   }
 
-  bool get _isOpen => MockData.isOpenNow(widget.place.openHours);
+  bool get _isOpen =>
+      OpeningHours.isOpenAt(widget.place.openHours, DateTime.now());
 
   void _openMaps() {
     Navigator.push(

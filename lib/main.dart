@@ -44,6 +44,12 @@ Future<void> main() async {
   await auth.bootstrap();
   unawaited(_bindAuthDeepLink(auth));
 
+  // Load the offline cache BEFORE places so PlaceProvider's fallback
+  // (OfflineProvider.cachedFallback) has the user's packs on a cold,
+  // offline start instead of the bundled mock data.
+  final offline = OfflineProvider();
+  await offline.init();
+
   final placeProvider = PlaceProvider();
   final tourProvider = TourProvider();
   final tripProvider = TripProvider();
@@ -112,7 +118,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => LeaderboardProvider()),
         ChangeNotifierProvider(create: (_) => GeofenceProvider()),
-        ChangeNotifierProvider(create: (_) => OfflineProvider()),
+        ChangeNotifierProvider<OfflineProvider>.value(value: offline),
         ChangeNotifierProvider(create: (_) => PlacePhotosProvider()),
         ChangeNotifierProvider<StreakProvider>.value(value: streak),
         ChangeNotifierProvider(create: (_) => LocaleProvider()),

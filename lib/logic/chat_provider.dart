@@ -29,6 +29,11 @@ class ChatProvider extends ChangeNotifier {
     });
   }
 
+  /// Stops listening to a place's chat (call when its screen closes).
+  void leave(String placeId) {
+    _subs.remove(placeId)?.cancel();
+  }
+
   Future<void> send(ChatMessage message) async {
     final list = List<ChatMessage>.from(_byPlace[message.placeId] ?? const []);
     list.add(message);

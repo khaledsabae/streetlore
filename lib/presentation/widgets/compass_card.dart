@@ -116,6 +116,7 @@ class _CompassCardState extends State<CompassCard>
   void dispose() {
     _compassSub?.cancel();
     _qiblaSub?.cancel();
+    CompassService.instance.stop();
     _introCtrl.dispose();
     _pulseCtrl.dispose();
     _iconCtrl.dispose();

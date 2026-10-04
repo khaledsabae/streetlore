@@ -70,6 +70,12 @@ class GeofencingService {
     _positionSub = null;
   }
 
+  // Places the user is currently inside of, and when each last alerted.
+  // An alert fires once per entry into a radius (and at most every 5 min
+  // per place), so overlapping places no longer alternate-spam.
+  final Set<String> _inside = {};
+  final Map<String, DateTime> _lastFireByPlace = {};
+
   void _onPosition(Position pos) {
     for (final a in _alerts) {
       final distance = Geolocator.distanceBetween(
@@ -79,22 +85,18 @@ class GeofencingService {
         a.lng,
       );
       if (distance <= a.radiusMeters) {
-        _maybeFire(a, distance);
+        if (_inside.add(a.placeId)) _maybeFire(a, distance);
+      } else {
+        _inside.remove(a.placeId);
       }
     }
   }
 
-  DateTime? _lastFire;
-  String? _lastFirePlaceId;
   void _maybeFire(GeofenceAlert a, double distance) {
     final now = DateTime.now();
-    if (_lastFirePlaceId == a.placeId &&
-        _lastFire != null &&
-        now.difference(_lastFire!).inMinutes < 5) {
-      return;
-    }
-    _lastFire = now;
-    _lastFirePlaceId = a.placeId;
+    final last = _lastFireByPlace[a.placeId];
+    if (last != null && now.difference(last).inMinutes < 5) return;
+    _lastFireByPlace[a.placeId] = now;
     _fireNotification(a, distance);
   }
 
