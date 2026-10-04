@@ -45,7 +45,7 @@ class _LiveChatScreenState extends State<LiveChatScreen> {
     final msg = ChatMessage(
       id: const Uuid().v4(),
       placeId: widget.place.id,
-      userId: auth.userEmail,
+      userId: auth.userId,
       userName: auth.userName,
       text: text,
       sentAt: DateTime.now(),

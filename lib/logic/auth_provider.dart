@@ -41,20 +41,28 @@ class AuthProvider extends ChangeNotifier {
   
   
   
-  bool get isAdmin {
-    final email = _userEmail.toLowerCase().trim();
-    if (email.isEmpty) return false;
-    if (_adminEmails.contains(email)) return true;
-    if (email.contains('mohamedsabae50')) return true;
-    
-    
-    
-    return false;
-  }
+  /// Server-decided admin flag (`public.is_admin()` RPC, backed by the
+  /// `admins` table). The UI only hides/shows admin screens with it; the
+  /// real enforcement is the RLS policies in
+  /// supabase/migrations/2026_10_04_security_hardening.sql.
+  bool _isAdmin = false;
+  bool get isAdmin => _isAdmin;
 
-  static const Set<String> _adminEmails = {
-    'mohamedsabae50-prog@users.noreply.github.com',
-  };
+  Future<void> _refreshAdminFlag() async {
+    var value = false;
+    if (AppConfig.supabaseEnabled && _isLoggedIn && !_isGuest) {
+      try {
+        final res = await Supabase.instance.client.rpc('is_admin');
+        value = res == true;
+      } catch (e) {
+        debugPrint('AuthProvider.isAdmin check failed: $e');
+      }
+    }
+    if (value != _isAdmin) {
+      _isAdmin = value;
+      notifyListeners();
+    }
+  }
 
   String get currentUserId => _userId.isEmpty ? 'guest' : _userId;
 
@@ -187,6 +195,7 @@ class AuthProvider extends ChangeNotifier {
     _username = (meta['username'] as String?) ?? _username;
     _userEmail = user.email ?? _userEmail;
     notifyListeners();
+    unawaited(_refreshAdminFlag());
     await _persistAuthSnapshot(
       accessToken: session?.accessToken,
       refreshToken: session?.refreshToken,
@@ -462,6 +471,7 @@ class AuthProvider extends ChangeNotifier {
     _userName = '';
     _username = '';
     _userEmail = '';
+    _isAdmin = false;
     notifyListeners();
 
     

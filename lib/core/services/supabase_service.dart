@@ -195,6 +195,9 @@ class SupabaseService {
       }).select();
       return (ok: true, error: null);
     } on PostgrestException catch (e) {
+      // 23505 = unique (user_id, place_id): the user already checked in
+      // here, which is not an error for the caller.
+      if (e.code == '23505') return (ok: true, error: null);
       _logError('registerCheckin($userId, $placeId)', e);
       return (ok: false, error: e);
     } catch (e) {
