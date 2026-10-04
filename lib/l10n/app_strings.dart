@@ -246,6 +246,22 @@ class AppStrings {
       'ar': 'مسح كل الأماكن المحفوظة؟',
     },
     'cancel': {'en': 'Cancel', 'ar': 'إلغاء'},
+    'delete_account': {'en': 'Delete account', 'ar': 'حذف الحساب'},
+    'delete_account_q': {
+      'en': 'Delete your account?',
+      'ar': 'تحذف حسابك؟',
+    },
+    'delete_account_sub': {
+      'en':
+          'This permanently deletes your account, check-ins, saved places and tours, leaderboard entry and chat messages, and clears this device. It cannot be undone.',
+      'ar':
+          'هيتمسح حسابك نهائيًا مع الزيارات والأماكن والجولات المحفوظة وترتيبك في اللوحة ورسايلك في الشات، وكل البيانات على الجهاز ده. مفيش رجوع.',
+    },
+    'delete_account_failed': {
+      'en': 'Could not delete your account. Check your connection and try again.',
+      'ar': 'ماقدرناش نحذف الحساب. اتأكد من النت وجرّب تاني.',
+    },
+    'privacy_policy': {'en': 'Privacy policy', 'ar': 'سياسة الخصوصية'},
     'no_saved_tours': {'en': 'No Saved Tours', 'ar': 'لا توجد جولات محفوظة'},
     'browse_tours': {'en': 'Browse Tours', 'ar': 'تصفح الجولات'},
     'switch_tours': {

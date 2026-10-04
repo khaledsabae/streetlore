@@ -57,4 +57,7 @@ class AppConfig {
 
   static const String mobileRedirectUrl =
       'io.supabase.streetlore://login-callback/';
+
+  static const String privacyPolicyUrl =
+      'https://github.com/mohamedsabae50-prog/streetlore/blob/main/docs/legal/privacy-policy.md';
 }

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../core/config/app_config.dart';
 import '../../core/animations/app_animations.dart';
 import '../../core/constants/app_version.dart';
 import '../../core/constants/app_colors.dart';
@@ -1020,6 +1022,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
 
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    children: [
+                      TextButton(
+                        onPressed: () => launchUrl(
+                          Uri.parse(AppConfig.privacyPolicyUrl),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        child: Text(
+                          context.tr('privacy_policy'),
+                          style: TextStyle(color: context.textSec),
+                        ),
+                      ),
+                      if (auth.isLoggedIn && !auth.isGuest)
+                        TextButton(
+                          onPressed: () => _showDeleteAccountDialog(context),
+                          child: Text(
+                            context.tr('delete_account'),
+                            style: TextStyle(color: AppColors.error),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
               const SliverToBoxAdapter(child: SizedBox(height: 32)),
             ],
           ),
@@ -1073,6 +1105,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
             },
             child: Text(
               context.tr('sign_out'),
+              style: const TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: context.cardColor,
+        title: Text(
+          context.tr('delete_account_q'),
+          style: TextStyle(color: context.textPri, fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          context.tr('delete_account_sub'),
+          style: TextStyle(color: context.textSec, fontSize: 14),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              context.tr('cancel'),
+              style: TextStyle(color: context.textSec),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final err = await context.read<AuthProvider>().deleteAccount();
+              if (!context.mounted) return;
+              if (err != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(context.tr('delete_account_failed'))),
+                );
+                return;
+              }
+              Navigator.of(context).pushAndRemoveUntil(
+                PageRouteBuilder(
+                  pageBuilder: (_, a, __) => const LoginScreen(),
+                  transitionDuration: const Duration(milliseconds: 500),
+                  transitionsBuilder: (_, a, __, child) =>
+                      FadeTransition(opacity: a, child: child),
+                ),
+                (route) => false,
+              );
+            },
+            child: Text(
+              context.tr('delete_account'),
               style: const TextStyle(color: Colors.white),
             ),
           ),

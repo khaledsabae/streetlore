@@ -436,6 +436,29 @@ class AuthProvider extends ChangeNotifier {
     await prefs.setString('user_name', _userName);
   }
 
+  /// Permanently deletes the signed-in account and its server data via the
+  /// `delete-account` Edge Function, then wipes everything stored on this
+  /// device. Returns null on success or an error key.
+  Future<String?> deleteAccount() async {
+    if (!AppConfig.supabaseEnabled || _isGuest || !_isLoggedIn) {
+      return 'not_signed_in';
+    }
+    try {
+      final res = await Supabase.instance.client.functions
+          .invoke('delete-account');
+      final data = res.data;
+      if (data is! Map || data['deleted'] != true) return 'delete_failed';
+    } catch (e) {
+      debugPrint('AuthProvider.deleteAccount failed: $e');
+      return 'delete_failed';
+    }
+    await signOut();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    await prefs.setBool('has_seen_onboarding', true);
+    return null;
+  }
+
   Future<void> signOut() async {
     
     
