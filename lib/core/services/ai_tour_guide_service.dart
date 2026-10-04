@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import '../config/app_config.dart';
 import '../../data/models/place_model.dart';
 import 'gemini_rest_client.dart';
 
@@ -26,23 +25,6 @@ class AITourGuideService {
   
   
   
-  bool _looksLikeRealKey(String key) {
-    if (key.isEmpty) return false;
-    if (key.contains('YOUR_') || key.contains('REPLACE')) return false;
-    
-    if (key.startsWith('AIza') && key.length >= 30) return true;
-    
-    if (key.startsWith('AQ.') && key.length >= 30) return true;
-    
-    if (key.length < 20) return false;
-    if (RegExp(r'^[A-Za-z0-9_\-]+$').hasMatch(key) ||
-        key.contains('.') ||
-        key.contains('_')) {
-      return true;
-    }
-    return false;
-  }
-
   final List<ChatMessage> _messages = [];
   List<ChatMessage> get messages => List.unmodifiable(_messages);
 
@@ -126,17 +108,9 @@ safety, and accessibility.''';
   Future<void> start(PlaceModel place) async {
     _currentPlace = place;
     _messages.clear();
-    final keys = AppConfig.geminiApiKeys
-        .map((k) => k.trim())
-        .where((k) => k.isNotEmpty)
-        .toList();
-    final bool canGoLive =
-        AppConfig.geminiEnabled && keys.any(_looksLikeRealKey);
+    final bool canGoLive = GeminiRestClient.instance.isAvailable;
     if (!canGoLive) {
-      debugPrint(
-        'AITourGuideService.start: using offline welcome '
-        '(enabled=${AppConfig.geminiEnabled}, keys=${keys.length})',
-      );
+      debugPrint('AITourGuideService.start: using offline welcome');
       _messages.add(
         ChatMessage(
           text: _offlineWelcome(place),
@@ -149,11 +123,7 @@ safety, and accessibility.''';
     
     
     
-    _session = _LiveSession(
-      apiKeys: keys,
-      model: AppConfig.geminiModel,
-      systemPrompt: _buildSystemPrompt(place),
-    );
+    _session = _LiveSession(systemPrompt: _buildSystemPrompt(place));
     _messages.add(
       ChatMessage(
         text:
@@ -198,11 +168,11 @@ safety, and accessibility.''';
     } catch (e) {
       debugPrint('AITourGuideService.send error: $e');
       final isArabic = userText.runes.any((r) => r >= 0x0600 && r <= 0x06FF);
-      final errBrief = _summarizeError(e);
+      debugPrint('AITourGuideService.send: ${_summarizeError(e)}');
       final offline = _offlineAnswer(userText, _currentPlace!);
       final reply = isArabic
-          ? '⚠️ Gemini API: $errBrief\n\n(إجابة محلية بدون نت)\n\n$offline'
-          : '⚠️ Gemini API: $errBrief\n\n(Local offline answer — API call failed)\n\n$offline';
+          ? '⚠️ ${_friendlyError(e, true)}\n\n(إجابة محلية)\n\n$offline'
+          : '⚠️ ${_friendlyError(e, false)}\n\n(Local answer)\n\n$offline';
       _messages.add(
         ChatMessage(text: reply, isUser: false, timestamp: DateTime.now()),
       );
@@ -210,6 +180,24 @@ safety, and accessibility.''';
     } finally {
       _busy = false;
     }
+  }
+
+  /// User-facing text. Raw API errors stay in debug logs only.
+  String _friendlyError(Object e, bool isArabic) {
+    final code = e is GeminiApiException ? e.statusCode : 0;
+    if (code == 429) {
+      return isArabic
+          ? 'وصلت للحد اليومي للمرشد الذكي. جرّب بكرة.'
+          : 'You reached today\'s AI guide limit. Try again tomorrow.';
+    }
+    if (code == 401) {
+      return isArabic
+          ? 'سجّل دخولك عشان تستخدم المرشد الذكي.'
+          : 'Sign in to use the AI guide.';
+    }
+    return isArabic
+        ? 'المرشد الذكي مش متاح دلوقتي.'
+        : 'The AI guide is unavailable right now.';
   }
 
   String _summarizeError(Object e) {
@@ -229,7 +217,7 @@ safety, and accessibility.''';
       if (code == 400) {
         return 'Bad request (400): ${_trim(e.message)} — likely invalid API '
             'key or unsupported model name. Check '
-            '`AppConfig.geminiApiKey` and `geminiModel`.';
+            'the ai-proxy function configuration.';
       }
       if (code == 401 || code == 403) {
         return 'Auth denied ($code): ${_trim(e.message)} — API key lacks '
@@ -238,7 +226,7 @@ safety, and accessibility.''';
       }
       if (code == 404) {
         return 'Model not found (404): ${_trim(e.message)} — '
-            '`AppConfig.geminiModel` is not available for this key.';
+            'the server model is not available.';
       }
       if (code == 429) {
         return 'Rate limited (429): ${_trim(e.message)}';
@@ -465,19 +453,13 @@ STRICT RULES:
 4. Use specific Alexandria details when possible (neighborhoods like Anfushi, Mansheya, Stanley, Moharam Bek, Attarin; landmarks like Bibliotheca Alexandrina, Qaitbay Citadel, Pompey's Pillar, Catacombs of Kom El Shoqafa, Montaza).
 5. Never invent places that don't exist. If unsure, say so and suggest the user open the app map.
 6. Speak directly to the user ("you") — friendly, opinionated, like a local friend showing them around.''';
-    final keys = AppConfig.geminiApiKeys
-        .map((k) => k.trim())
-        .where((k) => k.isNotEmpty)
-        .toList();
-    if (keys.isEmpty || !AppConfig.geminiEnabled) {
+    if (!GeminiRestClient.instance.isAvailable) {
       throw GeminiApiException(
         statusCode: 0,
         message: 'AI not configured',
       );
     }
     final result = await GeminiRestClient.instance.generateContent(
-      apiKeys: keys,
-      model: AppConfig.geminiModel,
       systemInstruction: system,
       userPrompt: userText,
       temperature: 0.7,
@@ -514,20 +496,12 @@ STRICT RULES:
 
 
 class _LiveSession {
-  _LiveSession({
-    required this.apiKeys,
-    required this.model,
-    required this.systemPrompt,
-  });
+  _LiveSession({required this.systemPrompt});
 
-  final List<String> apiKeys;
-  final String model;
   final String systemPrompt;
 
   Future<_LiveReply> sendMessage(String userText) async {
     final result = await GeminiRestClient.instance.generateContent(
-      apiKeys: apiKeys,
-      model: model,
       systemInstruction: systemPrompt,
       userPrompt: userText,
       temperature: 0.7,
