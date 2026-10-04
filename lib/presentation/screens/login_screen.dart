@@ -121,6 +121,8 @@ class _LoginScreenState extends State<LoginScreen>
         return context.tr('login_err_wrong_password');
       case 'password_too_short':
         return context.tr('login_err_password_short');
+      case 'network_error':
+        return context.tr('google_network_error');
       default:
         return context.tr('login_err_unknown');
     }
@@ -301,7 +303,7 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                               validator: (v) {
                                 if (!_isSignUp) return null;
-                                if (v == null || v.length < 6) {
+                                if (v == null || v.length < 8) {
                                   return context.tr('login_err_password_short');
                                 }
                                 return null;

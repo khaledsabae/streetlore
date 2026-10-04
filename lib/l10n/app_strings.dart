@@ -817,8 +817,8 @@ class AppStrings {
       'ar': 'من فضلك أدخل بريدًا إلكترونيًا صحيحًا',
     },
     'login_err_password_short': {
-      'en': 'Password must be at least 6 characters',
-      'ar': 'كلمة المرور لازم تكون 6 حروف على الأقل',
+      'en': 'Password must be at least 8 characters',
+      'ar': 'كلمة المرور لازم تكون 8 حروف على الأقل',
     },
     'login_err_account_exists': {
       'en': 'An account with this email already exists. Try signing in.',
@@ -842,8 +842,8 @@ class AppStrings {
       'ar': 'اكتب كلمة مرورك',
     },
     'login_password_hint_signup': {
-      'en': 'At least 6 characters',
-      'ar': '6 حروف على الأقل',
+      'en': 'At least 8 characters',
+      'ar': '8 حروف على الأقل',
     },
     'login_sign_in': {'en': 'Sign In', 'ar': 'تسجيل الدخول'},
     'login_sign_up': {'en': 'Sign Up', 'ar': 'إنشاء حساب'},

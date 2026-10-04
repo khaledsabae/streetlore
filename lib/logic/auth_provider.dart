@@ -97,6 +97,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
+    await _purgeLegacyLocalPasswords(prefs);
     _hasSeenOnboarding = prefs.getBool('has_seen_onboarding') ?? false;
 
     if (AppConfig.supabaseEnabled) {
@@ -130,6 +131,18 @@ class AuthProvider extends ChangeNotifier {
     _userId = prefs.getString('user_id') ?? '';
     _isLoading = false;
     notifyListeners();
+  }
+
+  /// Versions up to 1.0.63 kept a plaintext copy of the password for an
+  /// offline "local account" fallback. Wipe any such keys on start-up.
+  Future<void> _purgeLegacyLocalPasswords(SharedPreferences prefs) async {
+    final legacy = prefs
+        .getKeys()
+        .where((k) => k.startsWith('user_email_') && k.endsWith('_password'))
+        .toList();
+    for (final k in legacy) {
+      await prefs.remove(k);
+    }
   }
 
   Future<Session?> _tryRefresh() async {
@@ -197,8 +210,23 @@ class AuthProvider extends ChangeNotifier {
   
   
   
+  /// Only `io.supabase.streetlore://login-callback/...` (and the web
+  /// redirect page) may carry auth tokens into the app.
+  static bool isAuthCallback(Uri uri) {
+    final mobile = Uri.parse(AppConfig.mobileRedirectUrl);
+    if (uri.scheme == mobile.scheme && uri.host == mobile.host) return true;
+    final web = Uri.parse(AppConfig.webRedirectUrl);
+    return uri.scheme == 'https' &&
+        uri.host == web.host &&
+        uri.path.startsWith(web.path);
+  }
+
   Future<bool> handleAuthCallback(Uri uri) async {
     if (!AppConfig.supabaseEnabled) return false;
+    if (!isAuthCallback(uri)) {
+      debugPrint('AuthProvider: ignored non-auth deep link');
+      return false;
+    }
     try {
       await Supabase.instance.client.auth.getSessionFromUrl(uri);
       return true;
@@ -230,7 +258,7 @@ class AuthProvider extends ChangeNotifier {
       return 'invalid_email';
     }
     if (isSignUp) {
-      if (cleanPassword.length < 6) {
+      if (cleanPassword.length < 8) {
         return 'password_too_short';
       }
       if (!_isValidUsername(cleanUsername)) {
@@ -292,47 +320,12 @@ class AuthProvider extends ChangeNotifier {
         return 'auth_failed';
       } catch (e) {
         debugPrint('AuthProvider.signIn unexpected: $e');
-        
+        return 'network_error';
       }
     }
-
-    
-    
-    final prefs = await SharedPreferences.getInstance();
-
-    if (isSignUp) {
-      final existing = prefs.getString('user_email_${cleanEmail}_password');
-      if (existing != null) {
-        return 'account_exists';
-      }
-      await prefs.setString('user_email_${cleanEmail}_name', cleanName);
-      await prefs.setString('user_email_${cleanEmail}_password', cleanPassword);
-    } else {
-      final stored = prefs.getString('user_email_${cleanEmail}_password');
-      if (stored == null) {
-        return 'no_account';
-      }
-      if (stored != cleanPassword) {
-        return 'wrong_password';
-      }
-    }
-
-    _isLoggedIn = true;
-    _isGuest = false;
-    _userName = cleanName;
-    _username = cleanUsername;
-    _userEmail = cleanEmail;
-    if (_userId.isEmpty) {
-      _userId = const Uuid().v4();
-    }
-    notifyListeners();
-    await prefs.setBool('is_logged_in', true);
-    await prefs.setBool('is_guest', false);
-    await prefs.setString('user_name', _userName);
-    await prefs.setString('user_username', _username);
-    await prefs.setString('user_email', _userEmail);
-    await prefs.setString('user_id', _userId);
-    return null;
+    // No local (offline) accounts: credentials are only ever checked by
+    // Supabase Auth and never stored on the device.
+    return 'auth_failed';
   }
 
   
@@ -397,8 +390,7 @@ class AuthProvider extends ChangeNotifier {
     final refresh = prefs.getString('sb_refresh_token');
     if (access == null || refresh == null) return false;
     try {
-      final res = await Supabase.instance.client.auth
-          .setSession(access); 
+      final res = await Supabase.instance.client.auth.setSession(refresh);
       
       return res.session != null;
     } catch (e) {
